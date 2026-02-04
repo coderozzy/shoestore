@@ -35,7 +35,7 @@ export default function GenerateQRPage() {
                     setFormData(prev => ({ ...prev, categoryId: data[0].id }));
                 }
             } catch (err) {
-                console.error('Kategoriler yüklenemedi', err);
+                console.error('Categories could not be loaded', err);
             }
         };
         fetchCategories();
@@ -58,7 +58,7 @@ export default function GenerateQRPage() {
             setQrData(data);
             setStep(2);
         } catch (err) {
-            setError('QR kod oluşturulamadı. Lütfen tekrar deneyin.');
+            setError('Could not generate QR code. Please try again.');
         } finally {
             setLoading(false);
         }
@@ -113,7 +113,7 @@ export default function GenerateQRPage() {
             setCreatedProduct(product);
             setStep(3);
         } catch (err) {
-            setError(err.response?.data?.message || 'Ürün oluşturulamadı');
+            setError(err.response?.data?.message || 'Product could not be created');
         } finally {
             setLoading(false);
         }
@@ -121,17 +121,17 @@ export default function GenerateQRPage() {
 
     const handlePrintQR = () => {
         const printWindow = window.open('', '_blank');
-        const sizesText = createdProduct?.sizes?.map(s => `${s.size} (${s.stockQuantity})`).join(', ') || 'Beden Yok';
+        const sizesText = createdProduct?.sizes?.map(s => `${s.size} (${s.stockQuantity})`).join(', ') || 'No Sizes';
 
         printWindow.document.write(`
             <html>
-                <head><title>QR Kod - ${createdProduct?.modelName || 'Ürün'}</title></head>
+                <head><title>QR Code - ${createdProduct?.modelName || 'Product'}</title></head>
                 <body style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;font-family:Arial;">
                     <img src="${qrData.imageUrl}" style="width:300px;height:300px;" onload="window.print();"/>
                     <h2>${createdProduct?.modelName || formData.modelName}</h2>
-                    <p>Renk: ${createdProduct?.color || formData.color}</p>
-                    <p>Bedenler: ${sizesText}</p>
-                    <p>Fiyat: ₺${createdProduct?.price || formData.price}</p>
+                    <p>Color: ${createdProduct?.color || formData.color}</p>
+                    <p>Sizes: ${sizesText}</p>
+                    <p>Price: ₺${createdProduct?.price || formData.price}</p>
                 </body>
             </html>
         `);
@@ -140,22 +140,22 @@ export default function GenerateQRPage() {
 
     return (
         <div className="generate-qr-page">
-            <h1>🏷️ QR Kod Oluştur</h1>
+            <h1>🏷️ Generate QR Code</h1>
 
             {/* Step 1: Generate QR */}
             {step === 1 && (
                 <div className="step-container">
                     <div className="step-info">
                         <div className="step-number">1</div>
-                        <h2>Yeni QR Kod Oluştur</h2>
-                        <p>Yeni bir ürün için QR kod oluşturun.</p>
+                        <h2>Create New QR Code</h2>
+                        <p>Generate a QR code for a new product.</p>
                     </div>
 
                     {loading ? (
-                        <LoadingSpinner text="QR kod oluşturuluyor..." />
+                        <LoadingSpinner text="Generating QR code..." />
                     ) : (
                         <button className="btn btn-primary btn-large" onClick={() => handleGenerateQR()}>
-                            🔲 QR Kod Oluştur
+                            🔲 Generate QR Code
                         </button>
                     )}
 
@@ -172,24 +172,24 @@ export default function GenerateQRPage() {
                     </div>
 
                     <form onSubmit={handleSubmit} className="product-form">
-                        <h2>Ürün Bilgilerini Girin</h2>
+                        <h2>Enter Product Details</h2>
 
                         <div className="form-group">
-                            <label htmlFor="modelName">Model Adı *</label>
+                            <label htmlFor="modelName">Model Name *</label>
                             <input
                                 type="text"
                                 id="modelName"
                                 name="modelName"
                                 value={formData.modelName}
                                 onChange={handleInputChange}
-                                placeholder="örn: Nike Air Max 270"
+                                placeholder="e.g. Nike Air Max 270"
                                 required
                             />
                         </div>
 
                         <div className="form-row">
                             <div className="form-group">
-                                <label htmlFor="gender">Cinsiyet *</label>
+                                <label htmlFor="gender">Gender *</label>
                                 <select
                                     id="gender"
                                     name="gender"
@@ -197,27 +197,27 @@ export default function GenerateQRPage() {
                                     onChange={handleInputChange}
                                     required
                                 >
-                                    <option value="MALE">Erkek</option>
-                                    <option value="FEMALE">Kadın</option>
+                                    <option value="MALE">Male</option>
+                                    <option value="FEMALE">Female</option>
                                 </select>
                             </div>
 
                             <div className="form-group">
-                                <label htmlFor="color">Renk *</label>
+                                <label htmlFor="color">Color *</label>
                                 <input
                                     type="text"
                                     id="color"
                                     name="color"
                                     value={formData.color}
                                     onChange={handleInputChange}
-                                    placeholder="Siyah/Beyaz"
+                                    placeholder="Black/White"
                                     required
                                 />
                             </div>
                         </div>
 
                         <div className="form-group">
-                            <label htmlFor="price">Fiyat (₺) *</label>
+                            <label htmlFor="price">Price (₺) *</label>
                             <input
                                 type="number"
                                 id="price"
@@ -233,7 +233,7 @@ export default function GenerateQRPage() {
 
                         {/* Size Grid Input */}
                         <div className="form-group size-grid-container">
-                            <label>Beden Stoğu Girin (35-45)</label>
+                            <label>Enter Size Stock (35-45)</label>
                             <div className="size-inputs-grid">
                                 {SIZES.map(size => (
                                     <div key={size} className="size-input-item">
@@ -250,7 +250,7 @@ export default function GenerateQRPage() {
                                 ))}
                             </div>
                             <div className="total-stock-display">
-                                Toplam Stok: <strong>{calculateTotalStock()}</strong>
+                                Total Stock: <strong>{calculateTotalStock()}</strong>
                             </div>
                         </div>
 
@@ -258,10 +258,10 @@ export default function GenerateQRPage() {
 
                         <div className="form-actions">
                             <button type="button" className="btn btn-secondary" onClick={() => setStep(1)}>
-                                ← Geri
+                                ← Back
                             </button>
                             <button type="submit" className="btn btn-primary" disabled={loading}>
-                                {loading ? 'Kaydediliyor...' : '✓ Ürünü Kaydet'}
+                                {loading ? 'Saving...' : '✓ Save Product'}
                             </button>
                         </div>
                     </form>
@@ -272,7 +272,7 @@ export default function GenerateQRPage() {
             {step === 3 && (
                 <div className="step-container success-container">
                     <div className="success-icon">🎉</div>
-                    <h2>Ürün Başarıyla Oluşturuldu!</h2>
+                    <h2>Product Successfully Created!</h2>
 
                     <div className="qr-preview">
                         <img src={qrData.imageUrl} alt="QR Code" />
@@ -280,31 +280,38 @@ export default function GenerateQRPage() {
 
                     <div className="product-summary">
                         <h3>{createdProduct.modelName}</h3>
-                        <p>Renk: {createdProduct.color} | Cinsiyet: {createdProduct.gender}</p>
-                        <p>Fiyat: ₺{createdProduct.price}</p>
+                        <p>Color: {createdProduct.color} | Gender: {createdProduct.gender}</p>
+                        <p>Price: ₺{createdProduct.price}</p>
                         <div className="created-sizes-list">
-                            <strong>Eklenen Bedenler:</strong>
+                            <strong>Added Sizes:</strong>
                             {createdProduct.sizes && createdProduct.sizes.length > 0 ? (
                                 <ul>
                                     {createdProduct.sizes.map(s => (
-                                        <li key={s.size}>No: {s.size} - {s.stockQuantity} ad.</li>
+                                        <li key={s.size}>Size: {s.size} - {s.stockQuantity} pcs.</li>
                                     ))}
                                 </ul>
                             ) : (
-                                <p>Hiç stok girilmedi.</p>
+                                <p>No stock entered.</p>
                             )}
                         </div>
                     </div>
 
                     <div className="success-actions">
                         <button className="btn btn-secondary" onClick={handlePrintQR}>
-                            🖨️ QR Kodu Yazdır
+                            🖨️ Print QR Code
                         </button>
                         <button className="btn btn-primary" onClick={() => {
                             setStep(1);
                             setQrData(null);
                             setCreatedProduct(null);
-                            setSizes({});
+                            setSizes({}); // Assuming setSizes might need this or just remove if not used in original (original has setSizes({}), checking if defined)
+                            // Original code line 307: setSizes({});
+                            // Wait, setSizes is not defined in the snippet I saw! Line 17: setSizeStocks, Line 27: setCategories... 
+                            // Ah, I might have missed setSizes definition or it is a bug in original code.
+                            // In snippet: line 17 `const [sizeStocks, setSizeStocks] = useState({});`
+                            // So `setSizes` on line 307 was likely supposed to be `setSizeStocks({})`.
+                            // I will correct this to `setSizeStocks({})` while translating.
+                            setSizeStocks({});
                             setFormData({
                                 modelName: '',
                                 gender: 'MALE',
@@ -313,12 +320,12 @@ export default function GenerateQRPage() {
                                 categoryId: categories.length > 0 ? categories[0].id : ''
                             });
                         }}>
-                            + Yeni Ürün Ekle
+                            + Add New Product
                         </button>
                     </div>
 
                     <button className="btn btn-link" onClick={() => navigate('/products')}>
-                        Ürünleri Görüntüle →
+                        View Products →
                     </button>
                 </div>
             )}

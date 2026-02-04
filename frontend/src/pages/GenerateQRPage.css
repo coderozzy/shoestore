@@ -186,3 +186,54 @@
     padding: var(--spacing-md) var(--spacing-xl);
     font-size: 1.1rem;
 }
+
+/* Size Grid Styles */
+.size-inputs-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(60px, 1fr));
+    gap: var(--spacing-sm);
+    margin-bottom: var(--spacing-sm);
+}
+
+.size-input-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+}
+
+.size-lbl {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    margin-bottom: 2px;
+}
+
+.size-input-item input {
+    text-align: center;
+    padding: var(--spacing-xs);
+}
+
+.size-input-item input.has-stock {
+    border-color: var(--accent-success);
+    background-color: rgba(16, 185, 129, 0.1);
+    color: var(--accent-success);
+    font-weight: bold;
+}
+
+.total-stock-display {
+    text-align: right;
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    margin-top: var(--spacing-xs);
+}
+
+/* Mobile Responsiveness */
+@media (max-width: 600px) {
+    .form-row {
+        grid-template-columns: 1fr;
+    }
+
+    .generate-qr-page {
+        padding: var(--spacing-sm);
+    }
+}

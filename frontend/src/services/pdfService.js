@@ -15,27 +15,27 @@ export const pdfService = {
 
         // Header
         doc.setFontSize(22);
-        doc.text('Gün Sonu Raporu', 105, 20, { align: 'center' });
+        doc.text('End of Day Report', 105, 20, { align: 'center' });
 
         doc.setFontSize(12);
-        doc.text(`Tarih: ${new Date(date).toLocaleDateString('tr-TR')}`, 105, 30, { align: 'center' });
+        doc.text(`Date: ${new Date(date).toLocaleDateString('en-US')}`, 105, 30, { align: 'center' });
 
         // Summary
         const totalSales = dailySummary.salesCount || 0;
         const totalRevenue = dailySummary.totalRevenue || 0;
 
         doc.setFontSize(14);
-        doc.text('Özet', 14, 45);
+        doc.text('Summary', 14, 45);
 
         doc.setFontSize(11);
-        doc.text(`Toplam Satış Adedi: ${totalSales}`, 14, 55);
-        doc.text(`Toplam Ciro: ${formatCurrency(totalRevenue)}`, 14, 62);
+        doc.text(`Total Sales Count: ${totalSales}`, 14, 55);
+        doc.text(`Total Revenue: ${formatCurrency(totalRevenue)}`, 14, 62);
 
         // Sales Table
         doc.setFontSize(14);
-        doc.text('Satış Detayları', 14, 75);
+        doc.text('Sales Details', 14, 75);
 
-        const tableColumn = ["Ürün", "Renk", "Beden", "Fiyat", "Adet", "Toplam"];
+        const tableColumn = ["Product", "Color", "Size", "Price", "Qty", "Total"];
         const tableRows = [];
 
         salesData.forEach(item => {
@@ -64,11 +64,11 @@ export const pdfService = {
 
         // Footer
         const finalY = doc.lastAutoTable.finalY || 80;
-        doc.text('İmza / Onay', 150, finalY + 30);
+        doc.text('Signature / Approval', 150, finalY + 30);
         doc.line(150, finalY + 40, 190, finalY + 40);
 
         // Save
-        const fileName = `Gun_Sonu_Raporu_${new Date(date).toISOString().split('T')[0]}.pdf`;
+        const fileName = `End_of_Day_Report_${new Date(date).toISOString().split('T')[0]}.pdf`;
         doc.save(fileName);
     }
 };

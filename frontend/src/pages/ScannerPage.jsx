@@ -48,7 +48,7 @@ export default function ScannerPage() {
             }
         } catch (err) {
             if (err.response?.status === 404) {
-                setError('Ürün bulunamadı.');
+                setError('Product not found.');
                 setScannedQrForCreation(qrCode);
             } else {
                 setError(err.response?.data?.message || 'Failed to fetch product');
@@ -70,7 +70,7 @@ export default function ScannerPage() {
     // --- SELL LOGIC ---
     const handleSell = async () => {
         if (!selectedSize) {
-            alert('Lütfen bir beden seçin');
+            alert('Please select a size');
             return;
         }
 
@@ -78,7 +78,7 @@ export default function ScannerPage() {
         try {
             const updatedProduct = await productService.sellProduct(product.id, parseFloat(selectedSize));
             setProduct(updatedProduct);
-            showSuccess(`Satış Başarılı! Stok düştü.`);
+            showSuccess(`Sale Successful! Stock updated.`);
 
             // Re-check selected size stock
             const updatedSize = updatedProduct.sizes.find(s => s.size === parseFloat(selectedSize));
@@ -87,7 +87,7 @@ export default function ScannerPage() {
                 setSelectedSize(nextAvailable ? nextAvailable.size.toString() : '');
             }
         } catch (err) {
-            setError(err.response?.data?.message || 'Satış yapılamadı');
+            setError(err.response?.data?.message || 'Sale failed');
         } finally {
             setActionLoading(false);
         }
@@ -103,10 +103,10 @@ export default function ScannerPage() {
             // This endpoint adds to existing stock
             const updatedProduct = await productService.updateSizeStock(product.id, size, qty);
             setProduct(updatedProduct);
-            showSuccess(`${size} numara için ${qty} adet stok eklendi.`);
+            showSuccess(`${qty} units of stock added for size ${size}.`);
             setStockUpdates(prev => ({ ...prev, [size]: '' }));
         } catch (err) {
-            setError(err.response?.data?.message || 'Stok güncellenemedi');
+            setError(err.response?.data?.message || 'Stock could not be updated');
         } finally {
             setActionLoading(false);
         }
@@ -124,11 +124,11 @@ export default function ScannerPage() {
             };
             const updatedProduct = await productService.addSize(product.id, sizeData);
             setProduct(updatedProduct);
-            showSuccess(`${newSize} numara eklendi.`);
+            showSuccess(`${newSize} size added.`);
             setNewSize('');
             setNewSizeStock('1');
         } catch (err) {
-            setError(err.response?.data?.message || 'Beden eklenemedi');
+            setError(err.response?.data?.message || 'Size could not be added');
         } finally {
             setActionLoading(false);
         }
@@ -148,7 +148,7 @@ export default function ScannerPage() {
                 <div className="sell-success-popup">
                     <div className="success-content">
                         <div className="success-icon">🎉</div>
-                        <h3>İşlem Başarılı!</h3>
+                        <h3>Operation Successful!</h3>
                         <p>{successMsg}</p>
                     </div>
                 </div>
@@ -160,25 +160,25 @@ export default function ScannerPage() {
 
             {loading && (
                 <div className="scanner-loading">
-                    <LoadingSpinner text="Ürün aranıyor..." />
+                    <LoadingSpinner text="Searching for product..." />
                 </div>
             )}
 
             {error && !loading && (
                 <div className="scanner-result error-result">
                     <div className="result-icon">❌</div>
-                    <h3>Hata</h3>
+                    <h3>Error</h3>
                     <p>{error}</p>
                     {scannedQrForCreation && (
                         <div className="create-product-action">
-                            <p className="create-hint">Bu QR kod sisteme kayıtlı değil.</p>
+                            <p className="create-hint">This QR code is not registered in the system.</p>
                             <button className="btn btn-primary" onClick={handleCreateProduct}>
-                                ✨ Yeni Ürün Oluştur
+                                ✨ Create New Product
                             </button>
                         </div>
                     )}
                     <button className="btn btn-secondary" onClick={handleScanAgain}>
-                        Tekrar Tara
+                        Scan Again
                     </button>
                 </div>
             )}
@@ -187,7 +187,7 @@ export default function ScannerPage() {
                 <div className="scanner-result success-result fade-in">
                     <div className="result-header">
                         <div className="result-icon">✅</div>
-                        <h3>Ürün Bulundu</h3>
+                        <h3>Product Found</h3>
                     </div>
 
                     <ProductCard
@@ -201,25 +201,25 @@ export default function ScannerPage() {
                             className={`tab-btn ${mode === 'sell' ? 'active' : ''}`}
                             onClick={() => setMode('sell')}
                         >
-                            💰 Satış Yap
+                            💰 Sell
                         </button>
                         <button
                             className={`tab-btn ${mode === 'stock' ? 'active' : ''}`}
                             onClick={() => setMode('stock')}
                         >
-                            📦 Stok Yönetimi
+                            📦 Stock Management
                         </button>
                     </div>
 
                     {/* SELL MODE */}
                     {mode === 'sell' && (
                         <div className="sales-section">
-                            <h4>Satış İşlemi</h4>
+                            <h4>Sale Operation</h4>
 
                             {product.sizes && product.sizes.length > 0 ? (
                                 <div className="sales-controls">
                                     <div className="size-selector">
-                                        <label>Beden Seçin:</label>
+                                        <label>Select Size:</label>
                                         <div className="size-options">
                                             {product.sizes.map((s) => (
                                                 <button
@@ -240,14 +240,14 @@ export default function ScannerPage() {
                                         onClick={handleSell}
                                         disabled={!selectedSize || actionLoading}
                                     >
-                                        {actionLoading ? 'İşleniyor...' : `💰 Sat (${selectedSize ? `No: ${selectedSize}` : 'Seç'})`}
+                                        {actionLoading ? 'Processing...' : `💰 Sell (${selectedSize ? `Size: ${selectedSize}` : 'Select'})`}
                                     </button>
                                 </div>
                             ) : (
                                 <div className="no-stock-msg">
-                                    <p>Bu ürüne henüz stok eklenmemiş.</p>
+                                    <p>No stock has been added to this product yet.</p>
                                     <button className="btn btn-link" onClick={() => setMode('stock')}>
-                                        Stok Ekle →
+                                        Add Stock →
                                     </button>
                                 </div>
                             )}
@@ -257,21 +257,21 @@ export default function ScannerPage() {
                     {/* STOCK MODE */}
                     {mode === 'stock' && (
                         <div className="stock-section">
-                            <h4>Stok Yönetimi (Depo)</h4>
+                            <h4>Stock Management (Warehouse)</h4>
 
                             {/* Existing Sizes */}
                             <div className="existing-sizes-list">
                                 {product.sizes?.map((s) => (
                                     <div key={s.size} className="stock-item">
                                         <div className="stock-info-col">
-                                            <span className="size-label">No: {s.size}</span>
-                                            <span className="current-stock">Mevcut: {s.stockQuantity}</span>
+                                            <span className="size-label">Size: {s.size}</span>
+                                            <span className="current-stock">Current: {s.stockQuantity}</span>
                                         </div>
                                         <div className="stock-action-col">
                                             <input
                                                 type="number"
                                                 className="stock-input"
-                                                placeholder="+ Adet"
+                                                placeholder="+ Qty"
                                                 value={stockUpdates[s.size] || ''}
                                                 onChange={(e) => setStockUpdates({ ...stockUpdates, [s.size]: e.target.value })}
                                             />
@@ -280,7 +280,7 @@ export default function ScannerPage() {
                                                 onClick={() => handleUpdateStock(s.size)}
                                                 disabled={!stockUpdates[s.size]}
                                             >
-                                                + Ekle
+                                                + Add
                                             </button>
                                         </div>
                                     </div>
@@ -289,11 +289,11 @@ export default function ScannerPage() {
 
                             {/* Add New Size */}
                             <form onSubmit={handleAddNewSize} className="add-new-size-form">
-                                <h5>Yeni Beden Ekle</h5>
+                                <h5>Add New Size</h5>
                                 <div className="new-size-row">
                                     <input
                                         type="number"
-                                        placeholder="Beden (Örn: 44)"
+                                        placeholder="Size (e.g. 44)"
                                         className="input"
                                         value={newSize}
                                         onChange={(e) => setNewSize(e.target.value)}
@@ -302,7 +302,7 @@ export default function ScannerPage() {
                                     />
                                     <input
                                         type="number"
-                                        placeholder="Adet"
+                                        placeholder="Qty"
                                         className="input"
                                         value={newSizeStock}
                                         onChange={(e) => setNewSizeStock(e.target.value)}
@@ -311,7 +311,7 @@ export default function ScannerPage() {
                                     />
                                 </div>
                                 <button className="btn btn-primary w-100" type="submit" disabled={actionLoading}>
-                                    {actionLoading ? 'Ekleniyor...' : '✨ Yeni Beden Ekle'}
+                                    {actionLoading ? 'Adding...' : '✨ Add New Size'}
                                 </button>
                             </form>
                         </div>
@@ -319,13 +319,13 @@ export default function ScannerPage() {
 
                     <div className="result-actions">
                         <button className="btn btn-secondary" onClick={handleScanAgain}>
-                            Yeni Tarama
+                            New Scan
                         </button>
                         <button
                             className="btn btn-outline"
                             onClick={() => navigate(`/products`)}
                         >
-                            Listeye Dön
+                            Return to List
                         </button>
                     </div>
                 </div>

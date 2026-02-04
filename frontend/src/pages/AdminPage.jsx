@@ -75,7 +75,7 @@ export default function AdminPage() {
             setDailyData(dailyReport);
         } catch (err) {
             console.error('Failed to fetch sales stats:', err);
-            alert('Satış verileri yüklenirken bir hata oluştu');
+            alert('An error occurred while loading sales data');
         } finally {
             setStatsLoading(false);
         }
@@ -118,7 +118,7 @@ export default function AdminPage() {
 
     const handleDownloadReport = async () => {
         // "Gün Sonu" implies report for WHAT IS HAPPENING TODAY, regardless of what I am viewing
-        const confirmDownload = confirm("Bugünün 'Gün Sonu Raporu'nu indirmek üzeresiniz. Devam edilsin mi?");
+        const confirmDownload = confirm("You are about to download today's 'End of Day Report'. Continue?");
         if (!confirmDownload) return;
 
         try {
@@ -136,20 +136,20 @@ export default function AdminPage() {
             ]);
 
             if (!Array.isArray(reportSalesStats)) {
-                throw new Error("Satış verisi alınamadı (Hatalı format).");
+                throw new Error("Sales data could not be retrieved (Invalid format).");
             }
 
             // Calculate totals from the fresh data
             const totalSales = reportSalesStats.reduce((sum, item) => sum + item.salesCount, 0);
             const totalRevenue = reportSalesStats.reduce((sum, item) => sum + (item.totalRevenue || 0), 0);
 
-            console.log("PDF Generasyon Başlıyor...", { reportSalesStats, totalSales, totalRevenue });
+            console.log("PDF Generation Starting...", { reportSalesStats, totalSales, totalRevenue });
             pdfService.generateDailyReport(new Date(), reportSalesStats, { salesCount: totalSales, totalRevenue });
         } catch (error) {
-            console.error("Rapor oluşturulurken hata:", error);
+            console.error("Error creating report:", error);
             // Show more specific error to user
-            const errorMessage = error.response?.data?.message || error.message || "Bilinmeyen bir hata";
-            alert(`Rapor oluşturulamadı: ${errorMessage}`);
+            const errorMessage = error.response?.data?.message || error.message || "Unknown error";
+            alert(`Report could not be created: ${errorMessage}`);
         }
     };
 
@@ -279,7 +279,7 @@ export default function AdminPage() {
                 <h1>⚙️ Admin Dashboard</h1>
                 <div className="admin-actions">
                     <button className="btn btn-primary" onClick={handleDownloadReport}>
-                        📄 Gün Sonu Raporu (PDF)
+                        📄 End of Day Report (PDF)
                     </button>
                     <button className="btn btn-primary" onClick={() => setShowForm(true)}>
                         + Add Product
@@ -290,13 +290,13 @@ export default function AdminPage() {
             {/* Analytics Section */}
             <div className="analytics-section">
                 <div className="section-header">
-                    <h2>📊 Satış Analizleri</h2>
+                    <h2>📊 Sales Analytics</h2>
 
                     <div className="analytics-controls">
                         <div className="filter-buttons">
-                            <button className="btn btn-sm btn-outline" onClick={() => handleFilter('daily')}>Günlük</button>
-                            <button className="btn btn-sm btn-outline" onClick={() => handleFilter('monthly')}>Aylık</button>
-                            <button className="btn btn-sm btn-outline" onClick={() => handleFilter('yearly')}>Yıllık</button>
+                            <button className="btn btn-sm btn-outline" onClick={() => handleFilter('daily')}>Daily</button>
+                            <button className="btn btn-sm btn-outline" onClick={() => handleFilter('monthly')}>Monthly</button>
+                            <button className="btn btn-sm btn-outline" onClick={() => handleFilter('yearly')}>Yearly</button>
                         </div>
 
                         <div className="date-range-picker">
@@ -323,8 +323,8 @@ export default function AdminPage() {
                                 value={sortOrder}
                                 onChange={(e) => setSortOrder(e.target.value)}
                             >
-                                <option value="desc">En Çok Satan</option>
-                                <option value="asc">En Az Satan</option>
+                                <option value="desc">Best Sellers</option>
+                                <option value="asc">Least Sellers</option>
                             </select>
                         </div>
                     </div>

@@ -12,7 +12,7 @@ export default function SalesChart({ data, isLoading, dailyData }) {
         return (
             <div className="chart-container loading">
                 <div className="spinner"></div>
-                <p>Analizler yükleniyor...</p>
+                <p>Loading analytics...</p>
             </div>
         );
     }
@@ -21,7 +21,7 @@ export default function SalesChart({ data, isLoading, dailyData }) {
         return (
             <div className="chart-container empty">
                 <div className="empty-icon">📊</div>
-                <p>Bu tarih aralığında satış verisi bulunamadı.</p>
+                <p>No sales data found for this date range.</p>
             </div>
         );
     }
@@ -44,9 +44,9 @@ export default function SalesChart({ data, isLoading, dailyData }) {
             return (
                 <div className="custom-tooltip">
                     <p className="tooltip-title">{item.modelName}</p>
-                    <p className="tooltip-detail">Renk: {item.color}</p>
-                    <p className="tooltip-revenue">Gelir: {formatCurrency(item.totalRevenue)}</p>
-                    <p className="tooltip-count">Satış: {item.salesCount} adet @ {formatCurrency(item.unitPrice)}</p>
+                    <p className="tooltip-detail">Color: {item.color}</p>
+                    <p className="tooltip-revenue">Revenue: {formatCurrency(item.totalRevenue)}</p>
+                    <p className="tooltip-count">Sales: {item.salesCount} units @ {formatCurrency(item.unitPrice)}</p>
                 </div>
             );
         }
@@ -61,21 +61,21 @@ export default function SalesChart({ data, isLoading, dailyData }) {
                     <div className="card-icon">💰</div>
                     <div className="card-content">
                         <span className="card-value">{formatCurrency(totalRevenue)}</span>
-                        <span className="card-label">Toplam Gelir</span>
+                        <span className="card-label">Total Revenue</span>
                     </div>
                 </div>
                 <div className="summary-card total-sales">
                     <div className="card-icon">📦</div>
                     <div className="card-content">
                         <span className="card-value">{totalSales}</span>
-                        <span className="card-label">Toplam Satış</span>
+                        <span className="card-label">Total Sales</span>
                     </div>
                 </div>
                 <div className="summary-card avg-value">
                     <div className="card-icon">📈</div>
                     <div className="card-content">
                         <span className="card-value">{formatCurrency(totalSales > 0 ? totalRevenue / totalSales : 0)}</span>
-                        <span className="card-label">Ortalama Satış</span>
+                        <span className="card-label">Average Sales</span>
                     </div>
                 </div>
                 {topProduct && (
@@ -83,7 +83,7 @@ export default function SalesChart({ data, isLoading, dailyData }) {
                         <div className="card-icon">🏆</div>
                         <div className="card-content">
                             <span className="card-value">{topProduct.modelName}</span>
-                            <span className="card-label">En Çok Satan ({topProduct.salesCount} adet)</span>
+                            <span className="card-label">Best Seller ({topProduct.salesCount} units)</span>
                         </div>
                     </div>
                 )}
@@ -91,7 +91,7 @@ export default function SalesChart({ data, isLoading, dailyData }) {
 
             {/* Revenue Chart */}
             <div className="chart-section">
-                <h3>💵 Ürün Bazlı Gelir</h3>
+                <h3>💵 Product Based Revenue</h3>
                 <div className="chart-content">
                     <ResponsiveContainer width="100%" height={350}>
                         <BarChart
@@ -120,7 +120,7 @@ export default function SalesChart({ data, isLoading, dailyData }) {
                             />
                             <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(255,255,255,0.05)' }} />
                             <Bar
-                                name="Gelir"
+                                name="Revenue"
                                 dataKey="totalRevenue"
                                 radius={[8, 8, 0, 0]}
                                 maxBarSize={50}
@@ -136,17 +136,17 @@ export default function SalesChart({ data, isLoading, dailyData }) {
 
             {/* Products Table */}
             <div className="products-revenue-table">
-                <h3>📋 Satış Detayları</h3>
+                <h3>📋 Sales Details</h3>
                 <div className="table-wrapper">
                     <table>
                         <thead>
                             <tr>
                                 <th>#</th>
-                                <th>Ürün</th>
-                                <th>Renk</th>
-                                <th>Birim Fiyat</th>
-                                <th>Satış Adedi</th>
-                                <th>Toplam Gelir</th>
+                                <th>Product</th>
+                                <th>Color</th>
+                                <th>Unit Price</th>
+                                <th>Sales Count</th>
+                                <th>Total Revenue</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -165,7 +165,7 @@ export default function SalesChart({ data, isLoading, dailyData }) {
                         </tbody>
                         <tfoot>
                             <tr>
-                                <td colSpan="4" style={{ textAlign: 'right', paddingRight: '20px' }}><strong>TOPLAM</strong></td>
+                                <td colSpan="4" style={{ textAlign: 'right', paddingRight: '20px' }}><strong>TOTAL</strong></td>
                                 <td className="count"><strong>{totalSales}</strong></td>
                                 <td className="revenue"><strong>{formatCurrency(totalRevenue)}</strong></td>
                             </tr>
@@ -177,20 +177,20 @@ export default function SalesChart({ data, isLoading, dailyData }) {
             {/* Daily Report */}
             {dailyData && dailyData.length > 0 && (
                 <div className="daily-report">
-                    <h3>📅 Günlük Rapor</h3>
+                    <h3>📅 Daily Report</h3>
                     <div className="table-wrapper">
                         <table>
                             <thead>
                                 <tr>
-                                    <th>Tarih</th>
-                                    <th>Satış Adedi</th>
-                                    <th>Günlük Gelir</th>
+                                    <th>Date</th>
+                                    <th>Sales Count</th>
+                                    <th>Daily Revenue</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {dailyData.map((day) => (
                                     <tr key={day.date}>
-                                        <td className="date">{new Date(day.date).toLocaleDateString('tr-TR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</td>
+                                        <td className="date">{new Date(day.date).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</td>
                                         <td className="count">{day.totalSales}</td>
                                         <td className="revenue">{formatCurrency(day.totalRevenue)}</td>
                                     </tr>

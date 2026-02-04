@@ -106,7 +106,7 @@ export default function ProductCard({ product, onSell, onAddStock, onShowQr, onD
                             onDelete(product.id);
                         }}
                     >
-                        🗑️ Sil
+                        🗑️ Delete
                     </button>
                 </div>
             )}

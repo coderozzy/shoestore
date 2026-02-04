@@ -29,7 +29,7 @@ export default function Navbar() {
                     className={`nav-link ${isActive('/') ? 'active' : ''}`}
                 >
                     <span className="nav-icon">📷</span>
-                    <span>Scan (Продать / Добавить на склад)</span>
+                    <span>Scan (Sell / Add Stock)</span>
                 </Link>
 
                 <Link
@@ -37,7 +37,7 @@ export default function Navbar() {
                     className={`nav-link ${isActive('/generate-qr') ? 'active' : ''}`}
                 >
                     <span className="nav-icon">🏷️</span>
-                    <span>QR Oluştur</span>
+                    <span>Generate QR</span>
                 </Link>
 
                 <Link

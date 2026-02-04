@@ -63,7 +63,7 @@ export default function ProductsPage() {
         const printWindow = window.open('', '_blank');
 
         // Format sizes string
-        const sizesText = selectedQrProduct.sizes?.map(s => `${s.size} (${s.stockQuantity})`).join(', ') || 'Stok Yok';
+        const sizesText = selectedQrProduct.sizes?.map(s => `${s.size} (${s.stockQuantity})`).join(', ') || 'Out of Stock';
 
         printWindow.document.write(`
             <html>
@@ -90,20 +90,20 @@ export default function ProductsPage() {
     }, []);
 
     const handleDelete = async (productId) => {
-        if (!window.confirm('Bu ürünü ve QR kodunu kalıcı olarak silmek istediğinizden emin misiniz?')) {
+        if (!window.confirm('Are you sure you want to permanently delete this product and its QR code?')) {
             return;
         }
         try {
             await productService.deleteProduct(productId);
             setProducts(products.filter(p => p.id !== productId));
         } catch (err) {
-            alert(err.response?.data?.message || 'Ürün silinemedi');
+            alert(err.response?.data?.message || 'Product could not be deleted');
         }
     };
 
     const handleDeleteClick = (productId) => {
         if (userRole !== 'ADMIN') {
-            alert('Bu işlemi yapmaya yetkiniz yoktur!');
+            alert('You are not authorized to perform this action!');
             return;
         }
         handleDelete(productId);
@@ -151,10 +151,10 @@ export default function ProductsPage() {
                         </div>
                         <div className="qr-modal-actions">
                             <button className="btn btn-secondary" onClick={handlePrintQr}>
-                                🖨️ Yazdır
+                                🖨️ Print
                             </button>
                             <button className="btn btn-primary" onClick={handleCloseQrModal}>
-                                Kapat
+                                Close
                             </button>
                         </div>
                     </div>
