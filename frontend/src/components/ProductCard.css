@@ -1,0 +1,323 @@
+/* Modern Dark Product Card Design */
+.product-card {
+    background: #1a202c;
+    /* Dark gray/black background */
+    border-radius: 24px;
+    padding: 1.5rem;
+    box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.4);
+    /* Stronger shadow for dark mode */
+    border: 1px solid #2d3748;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    position: relative;
+    overflow: hidden;
+    color: #e2e8f0;
+    /* Default text color light gray */
+    height: 100%;
+    /* Force equal height for grid items */
+}
+
+/* Bright Gradient Sidebar Accent */
+.product-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 6px;
+    height: 100%;
+    background: linear-gradient(180deg, #f687b3 0%, #667eea 100%);
+    /* Pink to Blue gradient */
+    opacity: 1;
+}
+
+.product-card:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.6);
+    border-color: #4a5568;
+}
+
+.product-card.fade-in {
+    animation: fadeInUp 0.5s ease-out forwards;
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Header Section */
+.product-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid #2d3748;
+    /* Dark border */
+}
+
+.product-name {
+    font-size: 1.6rem;
+    /* Increased size */
+    font-weight: 900;
+    color: #ffffff;
+    /* Pure white for visibility */
+    margin: 0;
+    line-height: 1.2;
+    letter-spacing: 0.02em;
+    padding-left: 0.5rem;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+/* Gender Badges */
+.badge {
+    padding: 6px 14px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    border-radius: 12px;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+}
+
+.badge-male {
+    background-color: #2c5282;
+    /* Darker blue */
+    color: #bee3f8;
+    /* Light blue text */
+}
+
+.badge-female {
+    background-color: #97266d;
+    /* Darker pink */
+    color: #fed7e2;
+    /* Light pink text */
+}
+
+/* Product Details Grid */
+.product-details {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+}
+
+.detail-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.detail-label {
+    font-size: 0.75rem;
+    color: #a0aec0;
+    /* Lighter gray for labels */
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    font-weight: 600;
+}
+
+.detail-value {
+    font-weight: 600;
+    color: #f7fafc;
+    /* Almost white */
+    font-size: 1.1rem;
+}
+
+.detail-value.price {
+    color: #48bb78;
+    /* Bright green */
+    font-weight: 800;
+    font-size: 1.4rem;
+}
+
+/* Sizes & Stock Container - Dark Version */
+.sizes-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+}
+
+.sizes-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    background: #2d3748;
+    /* Dark container */
+    padding: 1rem;
+    border-radius: 16px;
+    width: 100%;
+    box-sizing: border-box;
+    border: 1px solid #4a5568;
+    max-height: 130px;
+    /* Limit height to prevent card stretching */
+    overflow-y: auto;
+    /* Enable scrolling */
+    align-content: flex-start;
+    /* Ensure items stack from top */
+}
+
+/* Custom Scrollbar for Sizes Grid */
+.sizes-grid::-webkit-scrollbar {
+    width: 6px;
+}
+
+.sizes-grid::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.sizes-grid::-webkit-scrollbar-thumb {
+    background: #4a5568;
+    border-radius: 3px;
+}
+
+.sizes-grid::-webkit-scrollbar-thumb:hover {
+    background: #718096;
+}
+
+.size-badge {
+    background-color: #1a202c;
+    /* Very dark background for badges */
+    border: 1px solid #4a5568;
+    border-radius: 10px;
+    padding: 8px 12px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+    transition: all 0.2s;
+    min-width: 50px;
+}
+
+.size-badge:hover {
+    border-color: #63b3ed;
+    /* Blue border on hover */
+    transform: translateY(-2px);
+    background-color: #2d3748;
+}
+
+.size-num {
+    font-size: 1.1rem;
+    font-weight: 800;
+    color: #e2e8f0;
+}
+
+.stock-num {
+    font-size: 0.75rem;
+    color: #cbd5e0;
+    margin-top: 2px;
+    font-weight: 500;
+}
+
+.size-badge.out-of-stock {
+    background-color: #2d3748;
+    opacity: 0.4;
+    border-color: #4a5568;
+    box-shadow: none;
+}
+
+.size-badge.out-of-stock .size-num {
+    color: #718096;
+    text-decoration: line-through;
+}
+
+/* Low Stock Warning */
+.low-stock {
+    color: #fc8181;
+    /* Light Red */
+}
+
+.stock-warning {
+    background: #742a2a;
+    /* Dark Red Background */
+    color: #fc8181;
+    /* Light Red Text */
+    padding: 2px 8px;
+    border-radius: 6px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    margin-left: 8px;
+}
+
+/* QR Code Section - Dark */
+.product-qr {
+    background: #2d3748;
+    color: white;
+    padding: 0.75rem 1rem;
+    border-radius: 12px;
+    border: 1px solid #4a5568;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 0.5rem;
+}
+
+.qr-label {
+    color: #a0aec0;
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+}
+
+.qr-value {
+    font-family: 'JetBrains Mono', 'Fira Code', monospace;
+    font-size: 0.75rem;
+    color: #90cdf4;
+    /* Light Blue */
+    background: transparent;
+    padding: 0;
+}
+
+/* Action Buttons */
+.product-actions {
+    display: flex;
+    gap: 0.75rem;
+    padding-top: 1rem;
+    margin-top: 0.5rem;
+    border-top: 1px solid #2d3748;
+}
+
+.btn-secondary {
+    background: #4a5568;
+    color: #e2e8f0;
+    border: none;
+    font-weight: 600;
+    padding: 0.6rem 1rem;
+    border-radius: 10px;
+    transition: all 0.2s;
+    width: 100%;
+}
+
+.btn-secondary:hover {
+    background: #2d3748;
+    color: white;
+}
+
+/* Delete Button */
+.delete-action {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 1rem;
+}
+
+.btn-danger {
+    background: transparent;
+    color: #fc8181;
+    /* Light Red */
+    border: 1px solid #c53030;
+    font-size: 0.8rem;
+    padding: 6px 12px;
+    border-radius: 8px;
+}
+
+.btn-danger:hover {
+    background: #742a2a;
+    color: #fff;
+    border-color: #fc8181;
+}
