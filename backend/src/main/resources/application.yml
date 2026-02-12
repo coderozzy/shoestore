@@ -6,7 +6,7 @@ spring:
     name: shoestore-backend
 
   datasource:
-    url: jdbc:postgresql://localhost:5432/shoestore
+    url: jdbc:postgresql://127.0.0.1:5433/shoestore
     username: postgres
     password: postgres
     driver-class-name: org.postgresql.Driver
@@ -27,7 +27,7 @@ spring:
 
 # JWT Configuration
 jwt:
-  secret: ${JWT_SECRET}
+  secret: ${JWT_SECRET:9a4f2c8d3b7e1g5h9j2k4l6m8n0p2q4r6t8w0y2z4x6v8u0s2q4o6m8k0i}
   expiration: 86400000  # 24 hours in milliseconds
 
 # App configuration
