@@ -40,8 +40,13 @@ export const productService = {
         await api.delete(`/products/${id}`);
     },
 
-    async sellProduct(id, size) {
-        const response = await api.post(`/products/${id}/sell?size=${size}`);
+    async sellProduct(id, size, quantity = 1) {
+        const response = await api.post(`/products/${id}/sell?size=${size}&quantity=${quantity}`);
+        return response.data;
+    },
+
+    async sellProductByQrCode(qrCode, size, quantity = 1) {
+        const response = await api.post(`/products/qr/${qrCode}/sell?size=${size}&quantity=${quantity}`);
         return response.data;
     },
 
@@ -51,7 +56,28 @@ export const productService = {
     },
 
     async updateSizeStock(id, size, quantity) {
-        const response = await api.put(`/products/${id}/sizes/${size}/stock?quantity=${quantity}`);
+        const response = await api.put(`/products/${id}/sizes/${size}?stockQuantity=${quantity}`);
+        return response.data;
+    },
+
+    async receiveStock(id, size, quantity, note = '') {
+        const response = await api.post(
+            `/products/${id}/sizes/${size}/receive?quantity=${quantity}&note=${encodeURIComponent(note || '')}`
+        );
+        return response.data;
+    },
+
+    async returnStock(id, size, quantity, note = '') {
+        const response = await api.post(
+            `/products/${id}/sizes/${size}/return?quantity=${quantity}&note=${encodeURIComponent(note || '')}`
+        );
+        return response.data;
+    },
+
+    async returnStockByQrCode(qrCode, size, quantity, note = '') {
+        const response = await api.post(
+            `/products/qr/${qrCode}/return?size=${size}&quantity=${quantity}&note=${encodeURIComponent(note || '')}`
+        );
         return response.data;
     },
 

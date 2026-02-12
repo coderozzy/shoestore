@@ -2,6 +2,7 @@ package com.shoestore.config;
 
 import com.shoestore.security.JwtAuthenticationFilter;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -20,6 +21,9 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
+import java.util.Arrays;
+import java.util.List;
+
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity
@@ -28,6 +32,9 @@ public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
     private final UserDetailsService userDetailsService;
+
+    @Value("${app.cors.allowed-origins}")
+    private String allowedOrigins;
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
@@ -48,14 +55,19 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.DELETE, "/api/products/**").hasRole("ADMIN")
                         .requestMatchers("/api/products/low-stock").hasRole("ADMIN")
                         .requestMatchers("/api/analytics/**").hasRole("ADMIN")
+                        .requestMatchers("/api/stock-movements/**").hasRole("ADMIN")
                         
                         // Staff and Admin can access
                         .requestMatchers(HttpMethod.GET, "/api/products/**").hasAnyRole("STAFF", "ADMIN")
                         .requestMatchers(HttpMethod.POST, "/api/products").hasAnyRole("STAFF", "ADMIN")
-                        .requestMatchers(HttpMethod.POST, "/api/products/*/sell").hasAnyRole("STAFF", "ADMIN")
+                        .requestMatchers(HttpMethod.POST, "/api/products/*/sell").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.POST, "/api/products/qr/*/sell").hasAnyRole("STAFF", "ADMIN")
                         // Allow Staff to manage sizes and stock
                         .requestMatchers(HttpMethod.POST, "/api/products/*/sizes").hasAnyRole("STAFF", "ADMIN")
-                        .requestMatchers(HttpMethod.PUT, "/api/products/*/sizes/*/stock").hasAnyRole("STAFF", "ADMIN")
+                        .requestMatchers(HttpMethod.PUT, "/api/products/*/sizes/*").hasAnyRole("STAFF", "ADMIN")
+                        .requestMatchers(HttpMethod.POST, "/api/products/*/sizes/*/receive").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.POST, "/api/products/*/sizes/*/return").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.POST, "/api/products/qr/*/return").hasAnyRole("STAFF", "ADMIN")
                         
                         .requestMatchers("/api/categories/**").hasAnyRole("STAFF", "ADMIN")
                         .requestMatchers("/api/scan-history/**").hasAnyRole("STAFF", "ADMIN")
@@ -71,9 +83,13 @@ public class SecurityConfig {
 
     @Bean
     public org.springframework.web.cors.CorsConfigurationSource corsConfigurationSource() {
+        List<String> origins = Arrays.stream(allowedOrigins.split(","))
+                .map(String::trim)
+                .filter(origin -> !origin.isEmpty())
+                .toList();
         org.springframework.web.cors.CorsConfiguration configuration = 
                 new org.springframework.web.cors.CorsConfiguration();
-        configuration.setAllowedOrigins(java.util.List.of("http://localhost:5173", "http://localhost:3000"));
+        configuration.setAllowedOrigins(origins);
         configuration.setAllowedMethods(java.util.List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(java.util.List.of("*"));
         configuration.setAllowCredentials(true);

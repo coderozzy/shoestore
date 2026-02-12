@@ -56,8 +56,15 @@ public class ProductSize {
     }
 
     public void decrementStock() {
-        if (stockQuantity > 0) {
-            stockQuantity--;
+        decrementStock(1);
+    }
+
+    public void decrementStock(int quantity) {
+        if (quantity <= 0) {
+            throw new IllegalStateException("Quantity must be greater than zero");
+        }
+        if (stockQuantity >= quantity) {
+            stockQuantity -= quantity;
         } else {
             throw new IllegalStateException("Cannot decrement stock below zero");
         }

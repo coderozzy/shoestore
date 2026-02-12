@@ -1,4 +1,3 @@
-import productService from '../services/productService';
 import './ProductCard.css';
 
 export default function ProductCard({ product, onSell, onAddStock, onShowQr, onDelete, showActions = false, showQrAction = false }) {
@@ -8,6 +7,8 @@ export default function ProductCard({ product, onSell, onAddStock, onShowQr, onD
             currency: 'USD'
         }).format(price);
     };
+
+    const sortedSizes = [...(product.sizes || [])].sort((a, b) => Number(a.size) - Number(b.size));
 
     // Calculate total stock if not provided (though backend usually provides it)
     const totalStock = product.totalStock ?? product.sizes?.reduce((sum, s) => sum + s.stockQuantity, 0) ?? 0;
@@ -36,7 +37,7 @@ export default function ProductCard({ product, onSell, onAddStock, onShowQr, onD
                 <div className="detail-row sizes-row">
                     <span className="detail-label">Sizes & Stock</span>
                     <div className="sizes-grid">
-                        {product.sizes?.map((sizeObj, index) => (
+                        {sortedSizes.map((sizeObj, index) => (
                             <div key={index} className={`size-badge ${sizeObj.stockQuantity === 0 ? 'out-of-stock' : ''}`}>
                                 <span className="size-num">{sizeObj.size}</span>
                                 <span className="stock-num">x{sizeObj.stockQuantity}</span>

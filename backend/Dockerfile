@@ -1,5 +1,5 @@
 # Backend Dockerfile
-FROM eclipse-temurin:17-jdk-alpine as build
+FROM eclipse-temurin:17-jdk AS build
 
 WORKDIR /app
 
@@ -17,7 +17,7 @@ COPY src ./src
 RUN ./mvnw package -DskipTests
 
 # Runtime stage
-FROM eclipse-temurin:17-jre-alpine
+FROM eclipse-temurin:17-jre
 
 WORKDIR /app
 

@@ -37,12 +37,88 @@ export default function ProductsPage() {
         return matchesGender && matchesSearch;
     });
 
-    const handleSell = async (productId) => {
+    const [actionModal, setActionModal] = useState({
+        open: false,
+        product: null
+    });
+    const [actionType, setActionType] = useState('SELL');
+    const [selectedSize, setSelectedSize] = useState('');
+    const [quantity, setQuantity] = useState(1);
+    const [note, setNote] = useState('');
+    const [actionLoading, setActionLoading] = useState(false);
+    const [actionError, setActionError] = useState('');
+
+    const openActionModal = (product) => {
+        const firstSize = product.sizes?.[0]?.size ?? '';
+        setActionModal({ open: true, product });
+        setActionType(userRole === 'ADMIN' ? 'SELL' : 'RECEIVE');
+        setSelectedSize(firstSize);
+        setQuantity(1);
+            setQuantity(1);
+        setNote('');
+        setActionError('');
+    };
+
+    const closeActionModal = () => {
+        if (actionLoading) return;
+        setActionModal({ open: false, product: null });
+    };
+
+    const handleConfirmAction = async () => {
+        if (!actionModal.product) return;
+        if (!selectedSize) {
+            setActionError('Please select a size');
+            return;
+        }
+        if (actionType === 'SELL' && userRole !== 'ADMIN') {
+            setActionError('Selling is only available via QR scan for staff.');
+            return;
+        }
+        if (actionType === 'SELL' || actionType === 'RECEIVE' || actionType === 'RETURN') {
+            if (!quantity || quantity <= 0) {
+                setActionError('Quantity must be greater than 0');
+                return;
+            }
+        }
+        if (actionType === 'SET' && quantity < 0) {
+            setActionError('Stock cannot be negative');
+            return;
+        }
+
+        setActionLoading(true);
+        setActionError('');
         try {
-            const updatedProduct = await productService.sellProduct(productId);
-            setProducts(products.map(p => p.id === productId ? updatedProduct : p));
+            let updatedProduct;
+            if (actionType === 'SELL') {
+                updatedProduct = await productService.sellProduct(actionModal.product.id, selectedSize, quantity);
+            } else if (actionType === 'RECEIVE') {
+                updatedProduct = await productService.receiveStock(
+                    actionModal.product.id,
+                    selectedSize,
+                    quantity,
+                    note
+                );
+            } else if (actionType === 'RETURN') {
+                updatedProduct = await productService.returnStock(
+                    actionModal.product.id,
+                    selectedSize,
+                    quantity,
+                    note
+                );
+            } else {
+                updatedProduct = await productService.updateSizeStock(
+                    actionModal.product.id,
+                    selectedSize,
+                    quantity
+                );
+            }
+
+            setProducts(products.map(p => p.id === updatedProduct.id ? updatedProduct : p));
+            closeActionModal();
         } catch (err) {
-            alert(err.response?.data?.message || 'Failed to sell product');
+            setActionError(err.response?.data?.message || 'Action could not be completed');
+        } finally {
+            setActionLoading(false);
         }
     };
 
@@ -161,6 +237,95 @@ export default function ProductsPage() {
                 </div>
             )}
 
+            {actionModal.open && (
+                <div className="modal-overlay" onClick={closeActionModal}>
+                    <div className="modal" onClick={e => e.stopPropagation()}>
+                        <div className="modal-header">
+                            <h2>Stock Actions</h2>
+                            <button className="modal-close" onClick={closeActionModal}>×</button>
+                        </div>
+                        <div className="product-form">
+                            {actionError && <div className="alert alert-error">{actionError}</div>}
+                            <div className="form-group">
+                                <label className="label">Product</label>
+                                <input
+                                    type="text"
+                                    className="input"
+                                    value={`${actionModal.product.modelName} (${actionModal.product.color})`}
+                                    disabled
+                                />
+                            </div>
+                            <div className="form-row">
+                                <div className="form-group">
+                                    <label className="label">Action</label>
+                                    <select
+                                        className="input"
+                                        value={actionType}
+                                        onChange={(e) => setActionType(e.target.value)}
+                                    >
+                                        {userRole === 'ADMIN' && <option value="SELL">Sell</option>}
+                                        <option value="RECEIVE">Receive Stock</option>
+                                        <option value="RETURN">Return Stock</option>
+                                        <option value="SET">Set Stock (Adjust)</option>
+                                    </select>
+                                </div>
+                                <div className="form-group">
+                                    <label className="label">Size</label>
+                                    <select
+                                        className="input"
+                                        value={selectedSize}
+                                        onChange={(e) => setSelectedSize(e.target.value)}
+                                    >
+                                        <option value="">Select size</option>
+                                        {actionModal.product.sizes?.map((s) => (
+                                            <option key={s.size} value={s.size}>
+                                                {s.size} (stock {s.stockQuantity})
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+                            </div>
+                            <div className="form-row">
+                                <div className="form-group">
+                                    <label className="label">Quantity</label>
+                                    <input
+                                        type="number"
+                                        className="input"
+                                        min={actionType === 'SELL' ? 1 : 0}
+                                        value={quantity}
+                                        onChange={(e) => setQuantity(Number(e.target.value))}
+                                    />
+                                </div>
+                                <div className="form-group">
+                                    <label className="label">Note (optional)</label>
+                                    <input
+                                        type="text"
+                                        className="input"
+                                        value={note}
+                                        onChange={(e) => setNote(e.target.value)}
+                                        placeholder="e.g., supplier delivery"
+                                        disabled={actionType === 'SELL' || actionType === 'SET'}
+                                    />
+                                </div>
+                            </div>
+                            <div className="form-actions">
+                                <button className="btn btn-secondary" onClick={closeActionModal} type="button">
+                                    Cancel
+                                </button>
+                                <button
+                                    className="btn btn-primary"
+                                    onClick={handleConfirmAction}
+                                    disabled={actionLoading}
+                                    type="button"
+                                >
+                                    {actionLoading ? 'Processing...' : 'Confirm'}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             <div className="products-header">
                 <div className="header-actions">
                     <h1>📦 Products</h1>
@@ -194,9 +359,10 @@ export default function ProductsPage() {
                         <ProductCard
                             key={product.id}
                             product={product}
-                            showActions={false}
+                            showActions={userRole === 'ADMIN'}
                             showQrAction={true}
                             onShowQr={handleShowQr}
+                            onSell={() => openActionModal(product)}
                             onDelete={handleDeleteClick}
                         />
                     ))}

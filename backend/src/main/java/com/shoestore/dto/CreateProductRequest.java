@@ -32,10 +32,15 @@ public class CreateProductRequest {
     @DecimalMin(value = "0.01", message = "Price must be greater than 0")
     private BigDecimal price;
 
+    @NotEmpty(message = "At least one size is required")
     @Valid
     private List<SizeStockRequest> sizes;
 
     @NotBlank(message = "QR Code Value is required")
+    @Pattern(
+            regexp = "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$",
+            message = "QR Code Value must be a valid UUID"
+    )
     private String qrCodeValue;
 
     private Long categoryId;

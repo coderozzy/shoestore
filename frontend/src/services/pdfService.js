@@ -6,7 +6,7 @@ const formatCurrency = (value) => {
 };
 
 export const pdfService = {
-    generateDailyReport: (date, salesData, dailySummary) => {
+    generateDailyReport: (date, salesRecords, dailySummary) => {
         const doc = new jsPDF();
 
         // Add font support for Turkish characters if needed (standard fonts might limit this, 
@@ -38,17 +38,14 @@ export const pdfService = {
         const tableColumn = ["Product", "Color", "Size", "Price", "Qty", "Total"];
         const tableRows = [];
 
-        salesData.forEach(item => {
+        salesRecords.forEach(item => {
             const productData = [
                 item.modelName,
                 item.color,
-                // If size data is aggregated it might be mixed, but assuming salesData has granularity or we list models
-                // The current salesData from analytics is grouped by product (model+color). 
-                // We don't have size breakdown in the main chart data, so we'll skip size or put '-'
-                "-",
+                item.size ?? '-',
                 formatCurrency(item.unitPrice),
-                item.salesCount,
-                formatCurrency(item.totalRevenue)
+                item.quantity ?? 0,
+                formatCurrency(item.totalPrice ?? 0)
             ];
             tableRows.push(productData);
         });

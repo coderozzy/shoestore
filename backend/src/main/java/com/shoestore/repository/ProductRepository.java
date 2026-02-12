@@ -18,7 +18,7 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
 
     List<Product> findByGender(Gender gender);
 
-    @Query("SELECT DISTINCT p FROM Product p JOIN p.sizes s WHERE s.stockQuantity <= :threshold")
+    @Query("SELECT p FROM Product p JOIN p.sizes s GROUP BY p HAVING SUM(s.stockQuantity) <= :threshold")
     List<Product> findLowStockProducts(@Param("threshold") int threshold);
 
     @Query("SELECT p FROM Product p WHERE p.category.name = :categoryName")

@@ -114,7 +114,13 @@ docker-compose up --build
 - `POST /api/products` - Create product (ADMIN)
 - `PUT /api/products/{id}` - Update product (ADMIN)
 - `DELETE /api/products/{id}` - Delete product (ADMIN)
-- `POST /api/products/{id}/sell` - Sell product (decrements stock)
+- `POST /api/products/{id}/sell` - Sell product (decrements stock, supports quantity)
+- `POST /api/products/qr/{qrCode}/sell` - Sell product via QR code (supports quantity, STAFF/ADMIN)
+- `POST /api/products/qr/{qrCode}/return` - Return product via QR code (supports quantity, STAFF/ADMIN)
+- `POST /api/products/{id}/sizes` - Add size (STAFF/ADMIN)
+- `PUT /api/products/{id}/sizes/{size}` - Update size stock (STAFF/ADMIN)
+- `POST /api/products/{id}/sizes/{size}/receive` - Receive stock (STAFF/ADMIN)
+- `POST /api/products/{id}/sizes/{size}/return` - Return stock (STAFF/ADMIN)
 - `GET /api/products/{id}/qr-image` - Get QR code image (PNG)
 
 ### Categories
@@ -122,6 +128,14 @@ docker-compose up --build
 
 ### Scan History
 - `GET /api/scan-history/recent` - Get recent scans
+
+### Stock Movements
+- `GET /api/stock-movements` - List movements (ADMIN)
+- `GET /api/stock-movements/recent` - Recent movements (ADMIN)
+
+### Analytics
+- `GET /api/analytics/daily-report?groupBy=DAY|MONTH|YEAR` - Sales summary by period (ADMIN)
+- `GET /api/analytics/sales-records` - Sales records with date/model/color/size (ADMIN)
 
 ## 🏗️ Project Structure
 

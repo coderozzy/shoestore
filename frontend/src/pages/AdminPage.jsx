@@ -4,6 +4,7 @@ import SalesChart from '../components/SalesChart';
 import productService from '../services/productService';
 import analyticsService from '../services/analyticsService';
 import pdfService from '../services/pdfService';
+import stockMovementService from '../services/stockMovementService';
 import './AdminPage.css';
 
 export default function AdminPage() {
@@ -13,13 +14,30 @@ export default function AdminPage() {
     const [dailyData, setDailyData] = useState([]);
     const [loading, setLoading] = useState(true);
     const [statsLoading, setStatsLoading] = useState(false);
+    const [salesRecords, setSalesRecords] = useState([]);
+    const [recordsLoading, setRecordsLoading] = useState(false);
+    const [stockMovements, setStockMovements] = useState([]);
+    const [movementsLoading, setMovementsLoading] = useState(false);
 
-    // Default to last 30 days
+    const formatLocalDate = (date) => {
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    };
+
+    const parseLocalDate = (dateString) => {
+        const [year, month, day] = dateString.split('-').map(Number);
+        return new Date(year, month - 1, day, 0, 0, 0);
+    };
+
+    // Default to last 30 days (local dates)
     const [dateRange, setDateRange] = useState({
-        start: new Date(new Date().setDate(new Date().getDate() - 30)).toISOString().split('T')[0],
-        end: new Date().toISOString().split('T')[0]
+        start: formatLocalDate(new Date(new Date().setDate(new Date().getDate() - 30))),
+        end: formatLocalDate(new Date())
     });
     const [sortOrder, setSortOrder] = useState('desc');
+    const [reportGroupBy, setReportGroupBy] = useState('DAY');
 
     const [showForm, setShowForm] = useState(false);
     const [editingProduct, setEditingProduct] = useState(null);
@@ -35,12 +53,8 @@ export default function AdminPage() {
 
     useEffect(() => {
         fetchData();
-        fetchSalesStats();
+        fetchStockMovements();
     }, []);
-
-    // ... (fetchData remains same, skipping for brevity in implementation plan but creating partial Replace in tool)
-    // Wait, replacing a large chunk. Let's keep existing fetchData and just target the imports and the component body start.
-    // For the tool call I need to precise target.
 
     const fetchData = async () => {
         setLoading(true);
@@ -61,23 +75,49 @@ export default function AdminPage() {
     const fetchSalesStats = async () => {
         setStatsLoading(true);
         try {
-            const start = new Date(dateRange.start);
-            start.setHours(0, 0, 0, 0);
-            const end = new Date(dateRange.end);
+            const start = parseLocalDate(dateRange.start);
+            const end = parseLocalDate(dateRange.end);
             end.setDate(end.getDate() + 1);
-            end.setHours(0, 0, 0, 0);
 
             const [salesStats, dailyReport] = await Promise.all([
                 analyticsService.getSalesStats(start, end),
-                analyticsService.getDailyReport(start, end)
+                analyticsService.getDailyReport(start, end, reportGroupBy)
             ]);
             setSalesData(salesStats);
             setDailyData(dailyReport);
         } catch (err) {
             console.error('Failed to fetch sales stats:', err);
-            alert('An error occurred while loading sales data');
+            const message = err.response?.data?.message || err.message || 'An error occurred while loading sales data';
+            alert(message);
         } finally {
             setStatsLoading(false);
+        }
+    };
+
+    const fetchSalesRecords = async () => {
+        setRecordsLoading(true);
+        try {
+            const start = parseLocalDate(dateRange.start);
+            const end = parseLocalDate(dateRange.end);
+            end.setDate(end.getDate() + 1);
+            const records = await analyticsService.getSalesRecords(start, end);
+            setSalesRecords(records);
+        } catch (err) {
+            console.error('Failed to fetch sales records:', err);
+        } finally {
+            setRecordsLoading(false);
+        }
+    };
+
+    const fetchStockMovements = async () => {
+        setMovementsLoading(true);
+        try {
+            const movements = await stockMovementService.getRecentMovements(7);
+            setStockMovements(movements);
+        } catch (err) {
+            console.error('Failed to fetch stock movements:', err);
+        } finally {
+            setMovementsLoading(false);
         }
     };
 
@@ -93,64 +133,69 @@ export default function AdminPage() {
 
         if (type === 'daily') {
             start = today;
+            setReportGroupBy('DAY');
         } else if (type === 'monthly') {
             start = new Date(today.getFullYear(), today.getMonth(), 1);
+            setReportGroupBy('MONTH');
         } else if (type === 'yearly') {
             start = new Date(today.getFullYear(), 0, 1);
+            setReportGroupBy('YEAR');
         }
 
         setDateRange({
-            start: start.toISOString().split('T')[0],
-            end: end.toISOString().split('T')[0]
+            start: formatLocalDate(start),
+            end: formatLocalDate(end)
         });
 
-        // Trigger fetch immediately (useEffect depends on dateRange changes? No, it currently doesn't listed in dependencies)
-        // The original useEffect was [], so I need to either add dateRange to useEffect dependency or call fetch manually.
-        // Let's call fetch manually after state update? React state update is async. 
-        // Better to add useEffect on dateRange change.
     };
 
-    // Need to modify useEffect to listen to dateRange or call fetchSalesStats inside handleFilter (but with new values).
-    // Let's add useEffect for dateRange change.
     useEffect(() => {
         fetchSalesStats();
-    }, [dateRange]);
+        fetchSalesRecords();
+    }, [dateRange, reportGroupBy]);
 
-    const handleDownloadReport = async () => {
-        // "Gün Sonu" implies report for WHAT IS HAPPENING TODAY, regardless of what I am viewing
-        const confirmDownload = confirm("You are about to download today's 'End of Day Report'. Continue?");
+    const downloadSalesReport = async (startDate, endDate, label) => {
+        const confirmDownload = confirm(`You are about to download the ${label} report. Continue?`);
         if (!confirmDownload) return;
 
         try {
-            const todayStart = new Date();
-            todayStart.setHours(0, 0, 0, 0);
+            const reportSalesRecords = await analyticsService.getSalesRecords(startDate, endDate);
 
-            const todayEnd = new Date();
-            todayEnd.setDate(todayEnd.getDate() + 1);
-            todayEnd.setHours(0, 0, 0, 0);
-
-            // Fetch dedicated data for the report
-            const [reportSalesStats, reportDailyStats] = await Promise.all([
-                analyticsService.getSalesStats(todayStart, todayEnd),
-                analyticsService.getDailyReport(todayStart, todayEnd)
-            ]);
-
-            if (!Array.isArray(reportSalesStats)) {
-                throw new Error("Sales data could not be retrieved (Invalid format).");
+            if (!Array.isArray(reportSalesRecords)) {
+                throw new Error("Sales records could not be retrieved (Invalid format).");
             }
 
-            // Calculate totals from the fresh data
-            const totalSales = reportSalesStats.reduce((sum, item) => sum + item.salesCount, 0);
-            const totalRevenue = reportSalesStats.reduce((sum, item) => sum + (item.totalRevenue || 0), 0);
+            const totalSales = reportSalesRecords.reduce((sum, item) => sum + (item.quantity || 0), 0);
+            const totalRevenue = reportSalesRecords.reduce((sum, item) => sum + (item.totalPrice || 0), 0);
 
-            console.log("PDF Generation Starting...", { reportSalesStats, totalSales, totalRevenue });
-            pdfService.generateDailyReport(new Date(), reportSalesStats, { salesCount: totalSales, totalRevenue });
+            console.log("PDF Generation Starting...", { reportSalesRecords, totalSales, totalRevenue });
+            pdfService.generateDailyReport(startDate, reportSalesRecords, { salesCount: totalSales, totalRevenue });
         } catch (error) {
             console.error("Error creating report:", error);
-            // Show more specific error to user
             const errorMessage = error.response?.data?.message || error.message || "Unknown error";
             alert(`Report could not be created: ${errorMessage}`);
         }
+    };
+
+    const handleDownloadReport = async () => {
+        const todayStart = parseLocalDate(formatLocalDate(new Date()));
+        const todayEnd = parseLocalDate(formatLocalDate(new Date()));
+        todayEnd.setDate(todayEnd.getDate() + 1);
+        return downloadSalesReport(todayStart, todayEnd, "End of Day");
+    };
+
+    const handleDownloadMonthlyReport = async () => {
+        const now = new Date();
+        const start = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0);
+        const end = new Date(now.getFullYear(), now.getMonth() + 1, 1, 0, 0, 0);
+        return downloadSalesReport(start, end, "Monthly");
+    };
+
+    const handleDownloadYearlyReport = async () => {
+        const now = new Date();
+        const start = new Date(now.getFullYear(), 0, 1, 0, 0, 0);
+        const end = new Date(now.getFullYear() + 1, 0, 1, 0, 0, 0);
+        return downloadSalesReport(start, end, "Yearly");
     };
 
     const processedSalesData = [...salesData].sort((a, b) => {
@@ -158,6 +203,89 @@ export default function AdminPage() {
             ? b.salesCount - a.salesCount
             : a.salesCount - b.salesCount;
     });
+
+    const getSortedSizes = (sizes = []) => {
+        return [...sizes].sort((a, b) => Number(a.size) - Number(b.size));
+    };
+
+    const [actionModal, setActionModal] = useState({
+        open: false,
+        product: null
+    });
+    const [actionType, setActionType] = useState('RECEIVE');
+    const [selectedSize, setSelectedSize] = useState('');
+    const [quantity, setQuantity] = useState(1);
+    const [note, setNote] = useState('');
+    const [actionLoading, setActionLoading] = useState(false);
+    const [actionError, setActionError] = useState('');
+
+    const openActionModal = (product) => {
+        const firstSize = product.sizes?.[0]?.size ?? '';
+        setActionModal({ open: true, product });
+        setActionType('RECEIVE');
+        setSelectedSize(firstSize);
+        setQuantity(1);
+        setNote('');
+        setActionError('');
+    };
+
+    const closeActionModal = () => {
+        if (actionLoading) return;
+        setActionModal({ open: false, product: null });
+    };
+
+    const handleConfirmAction = async () => {
+        if (!actionModal.product) return;
+        if (!selectedSize) {
+            setActionError('Please select a size');
+            return;
+        }
+        if (actionType === 'RECEIVE' || actionType === 'RETURN') {
+            if (!quantity || quantity <= 0) {
+                setActionError('Quantity must be greater than 0');
+                return;
+            }
+        }
+        if (actionType === 'SET' && quantity < 0) {
+            setActionError('Stock cannot be negative');
+            return;
+        }
+
+        setActionLoading(true);
+        setActionError('');
+        try {
+            let updatedProduct;
+            if (actionType === 'RECEIVE') {
+                updatedProduct = await productService.receiveStock(
+                    actionModal.product.id,
+                    selectedSize,
+                    quantity,
+                    note
+                );
+            } else if (actionType === 'RETURN') {
+                updatedProduct = await productService.returnStock(
+                    actionModal.product.id,
+                    selectedSize,
+                    quantity,
+                    note
+                );
+            } else {
+                updatedProduct = await productService.updateSizeStock(
+                    actionModal.product.id,
+                    selectedSize,
+                    quantity
+                );
+            }
+
+            setProducts(products.map(p => p.id === updatedProduct.id ? updatedProduct : p));
+            fetchStockMovements();
+            closeActionModal();
+        } catch (err) {
+            setActionError(err.response?.data?.message || 'Action could not be completed');
+        } finally {
+            setActionLoading(false);
+        }
+    };
 
     const handleInputChange = (e) => {
         const { name, value } = e.target;
@@ -281,6 +409,12 @@ export default function AdminPage() {
                     <button className="btn btn-primary" onClick={handleDownloadReport}>
                         📄 End of Day Report (PDF)
                     </button>
+                    <button className="btn btn-primary" onClick={handleDownloadMonthlyReport}>
+                        📄 Monthly Report (PDF)
+                    </button>
+                    <button className="btn btn-primary" onClick={handleDownloadYearlyReport}>
+                        📄 Yearly Report (PDF)
+                    </button>
                     <button className="btn btn-primary" onClick={() => setShowForm(true)}>
                         + Add Product
                     </button>
@@ -331,6 +465,56 @@ export default function AdminPage() {
                 </div>
 
                 <SalesChart data={processedSalesData} isLoading={statsLoading} dailyData={dailyData} />
+            </div>
+
+            {/* Sales Records */}
+            <div className="products-section">
+                <div className="section-header">
+                    <h2>🧾 Sales Records</h2>
+                    <button className="btn btn-sm btn-outline" onClick={fetchSalesRecords}>
+                        Refresh
+                    </button>
+                </div>
+                <div className="table-container">
+                    <table className="products-table">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Product</th>
+                                <th>Color</th>
+                                <th>Size</th>
+                                <th>Qty</th>
+                                <th>Unit Price</th>
+                                <th>Total</th>
+                                <th>User</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {recordsLoading ? (
+                                <tr>
+                                    <td colSpan="8">Loading...</td>
+                                </tr>
+                            ) : salesRecords.length === 0 ? (
+                                <tr>
+                                    <td colSpan="8">No sales found for this period.</td>
+                                </tr>
+                            ) : (
+                                salesRecords.map((record) => (
+                                    <tr key={record.id}>
+                                        <td>{new Date(record.occurredAt).toLocaleString()}</td>
+                                        <td>{record.modelName}</td>
+                                        <td>{record.color}</td>
+                                        <td>{record.size}</td>
+                                        <td>{record.quantity}</td>
+                                        <td>₺{record.unitPrice?.toFixed(2)}</td>
+                                        <td>₺{record.totalPrice?.toFixed(2)}</td>
+                                        <td>{record.username}</td>
+                                    </tr>
+                                ))
+                            )}
+                        </tbody>
+                    </table>
+                </div>
             </div>
 
             {/* Stats */}
@@ -483,7 +667,7 @@ export default function AdminPage() {
                                 <div className="sizes-display">
                                     <label className="label">Current Sizes</label>
                                     <div className="size-tags">
-                                        {editingProduct.sizes.map((s, i) => (
+                                        {getSortedSizes(editingProduct.sizes).map((s, i) => (
                                             <span key={i} className="size-tag">
                                                 Size {s.size}: {s.stockQuantity} in stock
                                             </span>
@@ -502,6 +686,95 @@ export default function AdminPage() {
                                 </button>
                             </div>
                         </form>
+                    </div>
+                </div>
+            )}
+
+            {/* Stock Action Modal */}
+            {actionModal.open && (
+                <div className="modal-overlay" onClick={closeActionModal}>
+                    <div className="modal" onClick={e => e.stopPropagation()}>
+                        <div className="modal-header">
+                            <h2>Stock Actions</h2>
+                            <button className="modal-close" onClick={closeActionModal}>×</button>
+                        </div>
+                        <div className="product-form">
+                            {actionError && <div className="alert alert-error">{actionError}</div>}
+                            <div className="form-group">
+                                <label className="label">Product</label>
+                                <input
+                                    type="text"
+                                    className="input"
+                                    value={`${actionModal.product.modelName} (${actionModal.product.color})`}
+                                    disabled
+                                />
+                            </div>
+                            <div className="form-row">
+                                <div className="form-group">
+                                    <label className="label">Action</label>
+                                    <select
+                                        className="input"
+                                        value={actionType}
+                                        onChange={(e) => setActionType(e.target.value)}
+                                    >
+                                        <option value="RECEIVE">Receive Stock</option>
+                                        <option value="RETURN">Return Stock</option>
+                                        <option value="SET">Set Stock (Adjust)</option>
+                                    </select>
+                                </div>
+                                <div className="form-group">
+                                    <label className="label">Size</label>
+                                    <select
+                                        className="input"
+                                        value={selectedSize}
+                                        onChange={(e) => setSelectedSize(e.target.value)}
+                                    >
+                                        <option value="">Select size</option>
+                                        {getSortedSizes(actionModal.product.sizes).map((s) => (
+                                            <option key={s.size} value={s.size}>
+                                                {s.size} (stock {s.stockQuantity})
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+                            </div>
+                            <div className="form-row">
+                                <div className="form-group">
+                                    <label className="label">Quantity</label>
+                                    <input
+                                        type="number"
+                                        className="input"
+                                        min={actionType === 'SET' ? 0 : 1}
+                                        value={quantity}
+                                        onChange={(e) => setQuantity(Number(e.target.value))}
+                                    />
+                                </div>
+                                <div className="form-group">
+                                    <label className="label">Note (optional)</label>
+                                    <input
+                                        type="text"
+                                        className="input"
+                                        value={note}
+                                        onChange={(e) => setNote(e.target.value)}
+                                        placeholder="e.g., supplier delivery"
+                                        disabled={actionType === 'SET'}
+                                    />
+                                </div>
+                            </div>
+                            <div className="form-actions">
+                                <button className="btn btn-secondary" onClick={closeActionModal} type="button">
+                                    Cancel
+                                </button>
+                                <button
+                                    className="btn btn-primary"
+                                    onClick={handleConfirmAction}
+                                    disabled={actionLoading}
+                                    type="button"
+                                >
+                                    {actionLoading ? 'Processing...' : 'Confirm'}
+                                </button>
+                            </div>
+                        </div>
                     </div>
                 </div>
             )}
@@ -537,7 +810,7 @@ export default function AdminPage() {
                                     <td>₺{product.price?.toFixed(2)}</td>
                                     <td>
                                         <div className="size-chips">
-                                            {product.sizes?.map((s, i) => (
+                                            {getSortedSizes(product.sizes).map((s, i) => (
                                                 <span key={i} className={`size-chip ${s.stockQuantity <= 5 ? 'low' : ''}`}>
                                                     {s.size} ({s.stockQuantity})
                                                 </span>
@@ -549,6 +822,12 @@ export default function AdminPage() {
                                     </td>
                                     <td>
                                         <div className="action-buttons">
+                                            <button
+                                                className="btn btn-sm btn-secondary"
+                                                onClick={() => openActionModal(product)}
+                                            >
+                                                Stock
+                                            </button>
                                             <button
                                                 className="btn btn-sm btn-secondary"
                                                 onClick={() => handleEdit(product)}
@@ -565,6 +844,56 @@ export default function AdminPage() {
                                     </td>
                                 </tr>
                             ))}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            {/* Stock Movements */}
+            <div className="products-section">
+                <div className="section-header">
+                    <h2>📦 Stock Movements</h2>
+                    <button className="btn btn-sm btn-outline" onClick={fetchStockMovements}>
+                        Refresh
+                    </button>
+                </div>
+                <div className="table-container">
+                    <table className="products-table">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Product</th>
+                                <th>Size</th>
+                                <th>Qty</th>
+                                <th>Direction</th>
+                                <th>Reason</th>
+                                <th>User</th>
+                                <th>Note</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {movementsLoading ? (
+                                <tr>
+                                    <td colSpan="8">Loading...</td>
+                                </tr>
+                            ) : stockMovements.length === 0 ? (
+                                <tr>
+                                    <td colSpan="8">No stock movements found.</td>
+                                </tr>
+                            ) : (
+                                stockMovements.map((movement) => (
+                                    <tr key={movement.id}>
+                                        <td>{new Date(movement.occurredAt).toLocaleString()}</td>
+                                        <td>{movement.productName}</td>
+                                        <td>{movement.size}</td>
+                                        <td>{movement.quantity}</td>
+                                        <td>{movement.direction}</td>
+                                        <td>{movement.reason}</td>
+                                        <td>{movement.username}</td>
+                                        <td>{movement.note || '-'}</td>
+                                    </tr>
+                                ))
+                            )}
                         </tbody>
                     </table>
                 </div>

@@ -7,6 +7,9 @@ import com.shoestore.entity.Category;
 import com.shoestore.entity.Product;
 import com.shoestore.entity.ProductSize;
 import com.shoestore.enums.Gender;
+import com.shoestore.enums.MovementDirection;
+import com.shoestore.enums.StockMovementReason;
+import com.shoestore.exception.BadRequestException;
 import com.shoestore.exception.ResourceNotFoundException;
 import com.shoestore.mapper.ProductMapper;
 import com.shoestore.repository.CategoryRepository;
@@ -37,6 +40,7 @@ public class ProductService {
     private final ScanHistoryRepository scanHistoryRepository;
     private final UserRepository userRepository;
     private final ProductMapper productMapper;
+    private final StockMovementService stockMovementService;
 
     public List<ProductDTO> getAllProducts() {
         return productMapper.toDTOList(productRepository.findAll());
@@ -65,13 +69,24 @@ public class ProductService {
 
     @Transactional
     public ProductDTO createProduct(CreateProductRequest request) {
+        if (request.getSizes() == null || request.getSizes().isEmpty()) {
+            throw new BadRequestException("At least one size is required");
+        }
+
+        UUID qrCodeValue;
+        try {
+            qrCodeValue = UUID.fromString(request.getQrCodeValue());
+        } catch (IllegalArgumentException ex) {
+            throw new BadRequestException("QR Code Value must be a valid UUID");
+        }
+
         // Create the product first
         Product product = Product.builder()
                 .modelName(request.getModelName())
                 .gender(request.getGender())
                 .color(request.getColor())
                 .price(request.getPrice())
-                .qrCodeValue(UUID.fromString(request.getQrCodeValue()))
+                .qrCodeValue(qrCodeValue)
                 .build();
         
         // Set category
@@ -99,6 +114,18 @@ public class ProductService {
         
         // Save with sizes
         savedProduct = productRepository.save(savedProduct);
+
+        for (CreateProductRequest.SizeStockRequest sizeRequest : request.getSizes()) {
+            if (sizeRequest.getStockQuantity() != null && sizeRequest.getStockQuantity() > 0) {
+                stockMovementService.recordMovement(
+                        savedProduct,
+                        sizeRequest.getSize(),
+                        sizeRequest.getStockQuantity(),
+                        MovementDirection.IN,
+                        StockMovementReason.RECEIPT,
+                        "Initial stock");
+            }
+        }
         log.info("Created product: {} with QR code: {} and {} sizes", 
                 savedProduct.getModelName(), savedProduct.getQrCodeValue(), savedProduct.getSizes().size());
         return productMapper.toDTO(savedProduct);
@@ -133,15 +160,29 @@ public class ProductService {
     }
 
     @Transactional
-    public ProductDTO sellProduct(Long productId, BigDecimal size) {
+    public ProductDTO sellProduct(Long productId, BigDecimal size, int quantity) {
+        if (size == null) {
+            throw new BadRequestException("Size is required");
+        }
+        if (quantity <= 0) {
+            throw new BadRequestException("Quantity must be greater than 0");
+        }
         Product product = productRepository.findById(productId)
                 .orElseThrow(() -> new ResourceNotFoundException("Product", "id", productId));
         
         ProductSize productSize = productSizeRepository.findByProductIdAndSize(productId, size)
                 .orElseThrow(() -> new ResourceNotFoundException("ProductSize", "size", size));
         
-        productSize.decrementStock();
+        productSize.decrementStock(quantity);
         productSizeRepository.save(productSize);
+
+        stockMovementService.recordMovement(
+                product,
+                size,
+                quantity,
+                MovementDirection.OUT,
+                StockMovementReason.SALE,
+                null);
         
         // Log sale to ScanHistory
         String username = SecurityContextHolder.getContext().getAuthentication().getName();
@@ -155,13 +196,26 @@ public class ProductService {
                 .build();
         scanHistoryRepository.save(history);
 
-        log.info("Sold product: {} size: {}, remaining stock: {}", 
-                product.getModelName(), size, productSize.getStockQuantity());
+        log.info("Sold product: {} size: {} quantity: {}, remaining stock: {}",
+                product.getModelName(), size, quantity, productSize.getStockQuantity());
         return productMapper.toDTO(product);
     }
 
     @Transactional
+    public ProductDTO sellProductByQrCode(UUID qrCodeValue, BigDecimal size, int quantity) {
+        Product product = productRepository.findByQrCodeValue(qrCodeValue)
+                .orElseThrow(() -> new ResourceNotFoundException("Product", "qrCode", qrCodeValue));
+        return sellProduct(product.getId(), size, quantity);
+    }
+
+    @Transactional
     public ProductDTO addSize(Long productId, BigDecimal size, Integer stockQuantity) {
+        if (size == null) {
+            throw new BadRequestException("Size is required");
+        }
+        if (stockQuantity == null || stockQuantity < 0) {
+            throw new BadRequestException("Stock quantity must be 0 or greater");
+        }
         Product product = productRepository.findById(productId)
                 .orElseThrow(() -> new ResourceNotFoundException("Product", "id", productId));
         
@@ -170,7 +224,7 @@ public class ProductService {
                 .anyMatch(s -> s.getSize().compareTo(size) == 0);
         
         if (sizeExists) {
-            throw new IllegalArgumentException("Size " + size + " already exists for this product");
+            throw new BadRequestException("Size " + size + " already exists for this product");
         }
         
         ProductSize productSize = ProductSize.builder()
@@ -181,6 +235,16 @@ public class ProductService {
         
         product.getSizes().add(productSize);
         Product updatedProduct = productRepository.save(product);
+
+        if (stockQuantity > 0) {
+            stockMovementService.recordMovement(
+                    product,
+                    size,
+                    stockQuantity,
+                    MovementDirection.IN,
+                    StockMovementReason.RECEIPT,
+                    "Initial stock for new size");
+        }
         
         log.info("Added size {} to product: {} with quantity: {}", size, product.getModelName(), stockQuantity);
         return productMapper.toDTO(updatedProduct);
@@ -188,17 +252,100 @@ public class ProductService {
 
     @Transactional
     public ProductDTO updateSizeStock(Long productId, BigDecimal size, Integer quantity) {
+        if (size == null) {
+            throw new BadRequestException("Size is required");
+        }
+        if (quantity == null || quantity < 0) {
+            throw new BadRequestException("Stock quantity must be 0 or greater");
+        }
         Product product = productRepository.findById(productId)
                 .orElseThrow(() -> new ResourceNotFoundException("Product", "id", productId));
         
         ProductSize productSize = productSizeRepository.findByProductIdAndSize(productId, size)
                 .orElseThrow(() -> new ResourceNotFoundException("ProductSize", "size", size));
         
+        int previousQuantity = productSize.getStockQuantity();
         productSize.setStockQuantity(quantity);
         productSizeRepository.save(productSize);
+
+        int delta = quantity - previousQuantity;
+        if (delta != 0) {
+            stockMovementService.recordMovement(
+                    product,
+                    size,
+                    Math.abs(delta),
+                    delta > 0 ? MovementDirection.IN : MovementDirection.OUT,
+                    StockMovementReason.ADJUSTMENT,
+                    "Manual stock adjustment");
+        }
         
         log.info("Updated stock for product: {} size: {} to: {}", product.getModelName(), size, quantity);
         return productMapper.toDTO(product);
+    }
+
+    @Transactional
+    public ProductDTO receiveStock(Long productId, BigDecimal size, Integer quantity, String note) {
+        if (size == null) {
+            throw new BadRequestException("Size is required");
+        }
+        if (quantity == null || quantity <= 0) {
+            throw new BadRequestException("Quantity must be greater than 0");
+        }
+        Product product = productRepository.findById(productId)
+                .orElseThrow(() -> new ResourceNotFoundException("Product", "id", productId));
+
+        ProductSize productSize = productSizeRepository.findByProductIdAndSize(productId, size)
+                .orElseThrow(() -> new ResourceNotFoundException("ProductSize", "size", size));
+
+        productSize.incrementStock(quantity);
+        productSizeRepository.save(productSize);
+
+        stockMovementService.recordMovement(
+                product,
+                size,
+                quantity,
+                MovementDirection.IN,
+                StockMovementReason.RECEIPT,
+                note);
+
+        log.info("Received stock for product: {} size: {} quantity: {}", product.getModelName(), size, quantity);
+        return productMapper.toDTO(product);
+    }
+
+    @Transactional
+    public ProductDTO returnStock(Long productId, BigDecimal size, Integer quantity, String note) {
+        if (size == null) {
+            throw new BadRequestException("Size is required");
+        }
+        if (quantity == null || quantity <= 0) {
+            throw new BadRequestException("Quantity must be greater than 0");
+        }
+        Product product = productRepository.findById(productId)
+                .orElseThrow(() -> new ResourceNotFoundException("Product", "id", productId));
+
+        ProductSize productSize = productSizeRepository.findByProductIdAndSize(productId, size)
+                .orElseThrow(() -> new ResourceNotFoundException("ProductSize", "size", size));
+
+        productSize.incrementStock(quantity);
+        productSizeRepository.save(productSize);
+
+        stockMovementService.recordMovement(
+                product,
+                size,
+                quantity,
+                MovementDirection.IN,
+                StockMovementReason.RETURN,
+                note);
+
+        log.info("Returned stock for product: {} size: {} quantity: {}", product.getModelName(), size, quantity);
+        return productMapper.toDTO(product);
+    }
+
+    @Transactional
+    public ProductDTO returnStockByQrCode(UUID qrCodeValue, BigDecimal size, Integer quantity, String note) {
+        Product product = productRepository.findByQrCodeValue(qrCodeValue)
+                .orElseThrow(() -> new ResourceNotFoundException("Product", "qrCode", qrCodeValue));
+        return returnStock(product.getId(), size, quantity, note);
     }
 
     public Product getProductEntityById(Long id) {

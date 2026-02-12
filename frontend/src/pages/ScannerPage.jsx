@@ -4,6 +4,7 @@ import QRScanner from '../components/QRScanner';
 import ProductCard from '../components/ProductCard';
 import LoadingSpinner from '../components/LoadingSpinner';
 import productService from '../services/productService';
+import { useAuth } from '../context/AuthContext';
 import './ScannerPage.css';
 
 export default function ScannerPage() {
@@ -14,11 +15,17 @@ export default function ScannerPage() {
     const [successMsg, setSuccessMsg] = useState(null);
     const [scannedQrForCreation, setScannedQrForCreation] = useState(null);
 
-    // 'sell' or 'stock'
+    const { isAdmin } = useAuth();
+    // 'sell' | 'stock' | 'return'
     const [mode, setMode] = useState('sell');
+
+    const sortedSizes = [...(product?.sizes || [])].sort((a, b) => Number(a.size) - Number(b.size));
 
     // Sell Mode State
     const [selectedSize, setSelectedSize] = useState('');
+    const [sellQuantity, setSellQuantity] = useState(1);
+    const [returnQuantity, setReturnQuantity] = useState(1);
+    const [returnNote, setReturnNote] = useState('');
 
     // Stock Mode State
     const [newSize, setNewSize] = useState('');
@@ -34,6 +41,9 @@ export default function ScannerPage() {
         setSuccessMsg(null);
         setScannedQrForCreation(null);
         setSelectedSize('');
+        setSellQuantity(1);
+        setReturnQuantity(1);
+        setReturnNote('');
         setNewSize('');
         setNewSizeStock('1');
         setStockUpdates({});
@@ -73,19 +83,36 @@ export default function ScannerPage() {
             alert('Please select a size');
             return;
         }
+        if (!sellQuantity || sellQuantity <= 0) {
+            alert('Quantity must be greater than 0');
+            return;
+        }
+        const selectedSizeValue = parseFloat(selectedSize);
+        const sizeRecord = product.sizes?.find(s => s.size === selectedSizeValue);
+        if (sizeRecord && sellQuantity > sizeRecord.stockQuantity) {
+            alert(`Only ${sizeRecord.stockQuantity} left in stock for size ${selectedSize}`);
+            return;
+        }
 
         setActionLoading(true);
         try {
-            const updatedProduct = await productService.sellProduct(product.id, parseFloat(selectedSize));
+            const updatedProduct = await productService.sellProductByQrCode(
+                product.qrCodeValue,
+                selectedSizeValue,
+                sellQuantity
+            );
             setProduct(updatedProduct);
-            showSuccess(`Sale Successful! Stock updated.`);
+            showSuccess(`Sale Successful! ${sellQuantity} item(s) sold.`);
 
             // Re-check selected size stock
             const updatedSize = updatedProduct.sizes.find(s => s.size === parseFloat(selectedSize));
             if (!updatedSize || updatedSize.stockQuantity === 0) {
-                const nextAvailable = updatedProduct.sizes.find(s => s.stockQuantity > 0);
+                const nextAvailable = updatedProduct.sizes
+                    .sort((a, b) => Number(a.size) - Number(b.size))
+                    .find(s => s.stockQuantity > 0);
                 setSelectedSize(nextAvailable ? nextAvailable.size.toString() : '');
             }
+            setSellQuantity(1);
         } catch (err) {
             setError(err.response?.data?.message || 'Sale failed');
         } finally {
@@ -93,7 +120,37 @@ export default function ScannerPage() {
         }
     };
 
-    // --- STOCK LOGIC ---
+    // --- RETURN LOGIC ---
+    const handleReturn = async () => {
+        if (!selectedSize) {
+            alert('Please select a size');
+            return;
+        }
+        if (!returnQuantity || returnQuantity <= 0) {
+            alert('Quantity must be greater than 0');
+            return;
+        }
+
+        setActionLoading(true);
+        try {
+            const updatedProduct = await productService.returnStockByQrCode(
+                product.qrCodeValue,
+                parseFloat(selectedSize),
+                returnQuantity,
+                returnNote
+            );
+            setProduct(updatedProduct);
+            showSuccess(`Return Successful! ${returnQuantity} item(s) returned.`);
+            setReturnQuantity(1);
+            setReturnNote('');
+        } catch (err) {
+            setError(err.response?.data?.message || 'Return failed');
+        } finally {
+            setActionLoading(false);
+        }
+    };
+
+    // --- STOCK LOGIC (Admin only) ---
     const handleUpdateStock = async (size) => {
         const qty = parseInt(stockUpdates[size] || 0);
         if (qty === 0) return;
@@ -204,11 +261,19 @@ export default function ScannerPage() {
                             💰 Sell
                         </button>
                         <button
-                            className={`tab-btn ${mode === 'stock' ? 'active' : ''}`}
-                            onClick={() => setMode('stock')}
+                            className={`tab-btn ${mode === 'return' ? 'active' : ''}`}
+                            onClick={() => setMode('return')}
                         >
-                            📦 Stock Management
+                            ↩️ Return
                         </button>
+                        {isAdmin() && (
+                            <button
+                                className={`tab-btn ${mode === 'stock' ? 'active' : ''}`}
+                                onClick={() => setMode('stock')}
+                            >
+                                📦 Stock Management
+                            </button>
+                        )}
                     </div>
 
                     {/* SELL MODE */}
@@ -221,7 +286,7 @@ export default function ScannerPage() {
                                     <div className="size-selector">
                                         <label>Select Size:</label>
                                         <div className="size-options">
-                                            {product.sizes.map((s) => (
+                                            {sortedSizes.map((s) => (
                                                 <button
                                                     key={s.size}
                                                     className={`size-option-btn ${selectedSize === s.size.toString() ? 'selected' : ''} ${s.stockQuantity === 0 ? 'disabled' : ''}`}
@@ -233,6 +298,16 @@ export default function ScannerPage() {
                                                 </button>
                                             ))}
                                         </div>
+                                    </div>
+                                    <div className="quantity-row">
+                                        <label>Quantity:</label>
+                                        <input
+                                            type="number"
+                                            className="input"
+                                            min="1"
+                                            value={sellQuantity}
+                                            onChange={(e) => setSellQuantity(Number(e.target.value))}
+                                        />
                                     </div>
 
                                     <button
@@ -254,8 +329,65 @@ export default function ScannerPage() {
                         </div>
                     )}
 
-                    {/* STOCK MODE */}
-                    {mode === 'stock' && (
+                    {/* RETURN MODE */}
+                    {mode === 'return' && (
+                        <div className="sales-section">
+                            <h4>Return Operation</h4>
+                            {product.sizes && product.sizes.length > 0 ? (
+                                <div className="sales-controls">
+                                    <div className="size-selector">
+                                        <label>Select Size:</label>
+                                        <div className="size-options">
+                                            {sortedSizes.map((s) => (
+                                                <button
+                                                    key={s.size}
+                                                    className={`size-option-btn ${selectedSize === s.size.toString() ? 'selected' : ''}`}
+                                                    onClick={() => setSelectedSize(s.size.toString())}
+                                                >
+                                                    {s.size}
+                                                    <span className="stock-tiny">{s.stockQuantity}</span>
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+                                    <div className="quantity-row">
+                                        <label>Quantity:</label>
+                                        <input
+                                            type="number"
+                                            className="input"
+                                            min="1"
+                                            value={returnQuantity}
+                                            onChange={(e) => setReturnQuantity(Number(e.target.value))}
+                                        />
+                                    </div>
+                                    <div className="quantity-row">
+                                        <label>Note (optional):</label>
+                                        <input
+                                            type="text"
+                                            className="input"
+                                            value={returnNote}
+                                            onChange={(e) => setReturnNote(e.target.value)}
+                                            placeholder="e.g., customer return"
+                                        />
+                                    </div>
+                                    <button
+                                        className="btn btn-primary sell-btn"
+                                        onClick={handleReturn}
+                                        disabled={!selectedSize || actionLoading}
+                                    >
+                                        {actionLoading ? 'Processing...' : `↩️ Return (${selectedSize ? `Size: ${selectedSize}` : 'Select'})`}
+                                    </button>
+                                </div>
+                            ) : (
+                                <div className="no-stock-msg">
+                                    <p>No sizes found for this product.</p>
+                                </div>
+                            )}
+                        </div>
+                    )}
+
+                    {/* STOCK MODE (Admin only) */}
+                    {mode === 'stock' && isAdmin() && (
                         <div className="stock-section">
                             <h4>Stock Management (Warehouse)</h4>
 

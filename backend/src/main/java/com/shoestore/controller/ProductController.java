@@ -80,10 +80,26 @@ public class ProductController {
     @PostMapping("/{id}/sell")
     public ResponseEntity<ProductDTO> sellProduct(
             @PathVariable Long id,
-            @RequestParam BigDecimal size) {
-        Product product = productService.getProductEntityById(id);
-        scanHistoryService.recordScan(product, "SELL");
-        return ResponseEntity.ok(productService.sellProduct(id, size));
+            @RequestParam BigDecimal size,
+            @RequestParam(defaultValue = "1") Integer quantity) {
+        return ResponseEntity.ok(productService.sellProduct(id, size, quantity));
+    }
+
+    @PostMapping("/qr/{qrCode}/sell")
+    public ResponseEntity<ProductDTO> sellProductByQr(
+            @PathVariable UUID qrCode,
+            @RequestParam BigDecimal size,
+            @RequestParam(defaultValue = "1") Integer quantity) {
+        return ResponseEntity.ok(productService.sellProductByQrCode(qrCode, size, quantity));
+    }
+
+    @PostMapping("/qr/{qrCode}/return")
+    public ResponseEntity<ProductDTO> returnProductByQr(
+            @PathVariable UUID qrCode,
+            @RequestParam BigDecimal size,
+            @RequestParam Integer quantity,
+            @RequestParam(required = false) String note) {
+        return ResponseEntity.ok(productService.returnStockByQrCode(qrCode, size, quantity, note));
     }
 
     @PostMapping("/{id}/sizes")
@@ -100,6 +116,24 @@ public class ProductController {
             @PathVariable BigDecimal size,
             @RequestParam Integer stockQuantity) {
         return ResponseEntity.ok(productService.updateSizeStock(id, size, stockQuantity));
+    }
+
+    @PostMapping("/{id}/sizes/{size}/receive")
+    public ResponseEntity<ProductDTO> receiveStock(
+            @PathVariable Long id,
+            @PathVariable BigDecimal size,
+            @RequestParam Integer quantity,
+            @RequestParam(required = false) String note) {
+        return ResponseEntity.ok(productService.receiveStock(id, size, quantity, note));
+    }
+
+    @PostMapping("/{id}/sizes/{size}/return")
+    public ResponseEntity<ProductDTO> returnStock(
+            @PathVariable Long id,
+            @PathVariable BigDecimal size,
+            @RequestParam Integer quantity,
+            @RequestParam(required = false) String note) {
+        return ResponseEntity.ok(productService.returnStock(id, size, quantity, note));
     }
 
     @GetMapping("/{id}/qr-image")

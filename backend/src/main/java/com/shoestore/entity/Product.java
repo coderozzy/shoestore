@@ -50,6 +50,7 @@ public class Product {
     private Category category;
 
     @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
+    @OrderBy("size ASC")
     @Builder.Default
     private List<ProductSize> sizes = new ArrayList<>();
 
