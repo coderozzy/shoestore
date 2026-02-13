@@ -177,6 +177,3 @@ shoestore/
   - **STAFF**: Can scan QR codes, view products, sell products
   - **ADMIN**: Full access including product management
 
-## 📄 License
-
-MIT License
