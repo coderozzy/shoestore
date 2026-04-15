@@ -6,6 +6,7 @@ import com.shoestore.entity.StockMovement;
 import com.shoestore.entity.User;
 import com.shoestore.enums.MovementDirection;
 import com.shoestore.enums.StockMovementReason;
+import com.shoestore.enums.Role;
 import com.shoestore.exception.ResourceNotFoundException;
 import com.shoestore.mapper.StockMovementMapper;
 import com.shoestore.repository.StockMovementRepository;
@@ -36,9 +37,7 @@ public class StockMovementService {
                                            MovementDirection direction,
                                            StockMovementReason reason,
                                            String note) {
-        String username = SecurityContextHolder.getContext().getAuthentication().getName();
-        User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new ResourceNotFoundException("User", "username", username));
+        User user = resolveAuthenticatedUser();
 
         StockMovement movement = StockMovement.builder()
                 .product(product)
@@ -56,6 +55,27 @@ public class StockMovementService {
         return stockMovementMapper.toDTO(saved);
     }
 
+    @Transactional
+    public StockMovementDTO recordSystemMovement(Product product,
+                                                 BigDecimal size,
+                                                 int quantity,
+                                                 MovementDirection direction,
+                                                 StockMovementReason reason,
+                                                 String note) {
+        User user = resolveSystemUser();
+        StockMovement movement = StockMovement.builder()
+                .product(product)
+                .user(user)
+                .size(size)
+                .quantity(quantity)
+                .direction(direction)
+                .reason(reason)
+                .note(note)
+                .build();
+        StockMovement saved = stockMovementRepository.save(movement);
+        return stockMovementMapper.toDTO(saved);
+    }
+
     public List<StockMovementDTO> getRecentMovements(int days) {
         LocalDateTime startDate = LocalDateTime.now().minusDays(days);
         return stockMovementMapper.toDTOList(stockMovementRepository.findRecentMovements(startDate));
@@ -69,6 +89,17 @@ public class StockMovementService {
     public List<StockMovementDTO> getMovementsBetween(LocalDateTime startDate, LocalDateTime endDate) {
         return stockMovementMapper.toDTOList(
                 stockMovementRepository.findMovementsBetween(startDate, endDate));
+    }
+
+    private User resolveAuthenticatedUser() {
+        String username = SecurityContextHolder.getContext().getAuthentication().getName();
+        return userRepository.findByUsername(username)
+                .orElseThrow(() -> new ResourceNotFoundException("User", "username", username));
+    }
+
+    private User resolveSystemUser() {
+        return userRepository.findFirstByRole(Role.ADMIN)
+                .orElseThrow(() -> new ResourceNotFoundException("User", "role", "ADMIN"));
     }
 }
 

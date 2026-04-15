@@ -1,179 +1,191 @@
-# ShoeStore - QR Code Scanning PWA
+# ShoeStore — Full Retail Platform
 
-A production-grade full-stack application for retail shoe store staff to scan QR codes and manage inventory using their phone camera.
+Unified software for a physical shoe store **and** its online shop.
+One backend talks to three independent frontends, each serving a different user:
 
-## 🚀 Features
+| URL (behind the gateway)      | Frontend        | Audience                  | Purpose                                                                 |
+| ----------------------------- | --------------- | ------------------------- | ----------------------------------------------------------------------- |
+| `http://localhost:3000/admin` | `admin-web/`    | Store owner / manager     | Dashboard, product CRUD, inventory, discounts, online + staff sales.    |
+| `http://localhost:3000/app`   | `staff-pwa/`    | In-store employees        | Phone PWA that scans shoe QR codes to sell, receive, or return stock.   |
+| `http://localhost:3000/store` | `storefront-web/`| Customers on the internet| E-commerce site. Browses products, checks out with Stripe.              |
 
-- **QR Code Scanning**: Use phone camera to scan product QR codes
-- **PWA Support**: Install on mobile devices, works offline
-- **Role-Based Access**: ADMIN and STAFF roles with different permissions
-- **Product Management**: Full CRUD operations for products
-- **Low Stock Alerts**: Automatic warnings for low inventory
-- **Scan History**: Track all product scans for analytics
-- **Dark Theme**: Modern, mobile-first UI design
+Hitting the bare root `/` redirects to `/admin/`.
 
-## 🛠️ Tech Stack
+---
 
-### Backend
-- Java 17+
-- Spring Boot 3.2
-- Spring Security (JWT)
-- Spring Data JPA
-- PostgreSQL
-- Flyway Migrations
-- ZXing (QR Code Generation)
+## 🏛️ Architecture
 
-### Frontend
-- React 18
-- Vite + PWA Plugin
-- html5-qrcode
-- React Router
-- Axios
-
-## 📋 Prerequisites
-
-- Java 17+
-- Node.js 18+
-- PostgreSQL 15+
-- Maven 3.8+
-
-## 🚀 Quick Start
-
-### 1. Database Setup
-
-```bash
-# Start PostgreSQL (using Docker)
-docker run -d \
-  --name shoestore-db \
-  -p 5432:5432 \
-  -e POSTGRES_DB=shoestore \
-  -e POSTGRES_PASSWORD=postgres \
-  postgres:15
+```
+                          ┌─────────────────────────┐
+                          │     reverse-proxy       │   (nginx, exposes :3000)
+                          │  routes /api /admin     │
+                          │        /app /store      │
+                          └──┬──────┬───────┬───────┘
+                             │      │       │
+     ┌───────────────────────┘      │       └────────────────────────────┐
+     │                              │                                     │
+     ▼                              ▼                                     ▼
+┌─────────┐                  ┌───────────┐                       ┌───────────────┐
+│admin-web│                  │ staff-pwa │                       │storefront-web │
+│ React   │                  │ React PWA │                       │ React + Stripe│
+└────┬────┘                  └─────┬─────┘                       └───────┬───────┘
+     │  /api/*                     │  /api/*                             │  /api/storefront/*
+     └──────────────────┬──────────┴─────────────────────────────────────┘
+                        ▼
+                  ┌───────────┐        ┌──────────┐
+                  │  backend  │◄──────►│ Postgres │
+                  │ Spring 3  │  JPA   │   15     │
+                  └─────┬─────┘        └──────────┘
+                        │  HTTPS
+                        ▼
+                   ┌────────┐
+                   │ Stripe │ (PaymentIntents + webhook)
+                   └────────┘
 ```
 
-### 2. Backend Setup
-
-```bash
-cd backend
-
-# Run the application
-./mvnw spring-boot:run
-```
-
-Backend will start on http://localhost:8080
-
-### 3. Frontend Setup
-
-```bash
-cd frontend
-
-# Install dependencies
-npm install
-
-# Start development server
-npm run dev
-```
-
-Frontend will start on http://localhost:5173
-
-## 🐳 Docker Deployment
-
-```bash
-# Build and run all services
-docker-compose up --build
-
-# Access the application
-# Frontend: http://localhost:3000
-# Backend: http://localhost:8080
-```
-
-## 🔐 Default Credentials
-
-| Username | Password | Role |
-|----------|----------|------|
-| admin | admin123 | ADMIN |
-| staff | admin123 | STAFF |
-
-## 📱 PWA Installation
-
-1. Open http://localhost:5173 on your mobile browser
-2. Tap "Add to Home Screen" when prompted
-3. The app will be installed as a standalone application
-
-## 📡 API Endpoints
-
-### Authentication
-- `POST /api/auth/login` - Login and get JWT token
-
-### Products
-- `GET /api/products` - List all products
-- `GET /api/products/{id}` - Get product by ID
-- `GET /api/products/qr/{qrCode}` - Get product by QR code
-- `GET /api/products/gender/{gender}` - Filter by gender
-- `GET /api/products/low-stock` - Get low stock products
-- `POST /api/products` - Create product (ADMIN)
-- `PUT /api/products/{id}` - Update product (ADMIN)
-- `DELETE /api/products/{id}` - Delete product (ADMIN)
-- `POST /api/products/{id}/sell` - Sell product (decrements stock, supports quantity)
-- `POST /api/products/qr/{qrCode}/sell` - Sell product via QR code (supports quantity, STAFF/ADMIN)
-- `POST /api/products/qr/{qrCode}/return` - Return product via QR code (supports quantity, STAFF/ADMIN)
-- `POST /api/products/{id}/sizes` - Add size (STAFF/ADMIN)
-- `PUT /api/products/{id}/sizes/{size}` - Update size stock (STAFF/ADMIN)
-- `POST /api/products/{id}/sizes/{size}/receive` - Receive stock (STAFF/ADMIN)
-- `POST /api/products/{id}/sizes/{size}/return` - Return stock (STAFF/ADMIN)
-- `GET /api/products/{id}/qr-image` - Get QR code image (PNG)
-
-### Categories
-- `GET /api/categories` - List all categories
-
-### Scan History
-- `GET /api/scan-history/recent` - Get recent scans
-
-### Stock Movements
-- `GET /api/stock-movements` - List movements (ADMIN)
-- `GET /api/stock-movements/recent` - Recent movements (ADMIN)
-
-### Analytics
-- `GET /api/analytics/daily-report?groupBy=DAY|MONTH|YEAR` - Sales summary by period (ADMIN)
-- `GET /api/analytics/sales-records` - Sales records with date/model/color/size (ADMIN)
-
-## 🏗️ Project Structure
+### Module layout
 
 ```
 shoestore/
-├── backend/
-│   ├── src/main/java/com/shoestore/
-│   │   ├── config/           # Security, CORS configuration
-│   │   ├── controller/       # REST controllers
-│   │   ├── dto/              # Data Transfer Objects
-│   │   ├── entity/           # JPA entities
-│   │   ├── enums/            # Gender, Role enums
-│   │   ├── exception/        # Custom exceptions
-│   │   ├── mapper/           # MapStruct mappers
-│   │   ├── repository/       # JPA repositories
-│   │   ├── security/         # JWT utilities
-│   │   └── service/          # Business logic
-│   └── src/main/resources/
-│       ├── db/migration/     # Flyway migrations
-│       └── application.yml
-│
-├── frontend/
-│   ├── public/icons/         # PWA icons
-│   └── src/
-│       ├── components/       # React components
-│       ├── pages/            # Page components
-│       ├── services/         # API services
-│       ├── context/          # React context
-│       └── hooks/            # Custom hooks
-│
-└── docker-compose.yml
+├── backend/               Spring Boot API (shared by every frontend)
+├── admin-web/             React admin panel — served at /admin
+├── staff-pwa/             React PWA for employees (QR scan) — served at /app
+├── storefront-web/        React customer e-commerce — served at /store
+├── reverse-proxy/         nginx gateway that fans out /admin /app /store /api
+├── docker-compose.yml     orchestrates all of the above
+└── .env.example           copy → .env and fill in JWT / Stripe secrets
 ```
 
-## 🔒 Security
+All three frontends talk to the **same** backend at `/api/*`. The `/api/storefront/**`
+surface is public (no JWT); everything else enforces JWT roles (`ADMIN`, `STAFF`).
 
-- JWT-based authentication
-- Passwords stored with BCrypt hashing
-- Role-based access control:
-  - **STAFF**: Can scan QR codes, view products, sell products
-  - **ADMIN**: Full access including product management
+---
 
+## 🚀 Quick start (one command)
+
+```bash
+cp .env.example .env   # paste your Stripe test keys
+docker compose up --build
+```
+
+Open:
+
+- **`http://localhost:3000/admin`** — owner panel  (default login `admin` / `admin123`)
+- **`http://localhost:3000/app`**   — staff PWA     (default login `staff` / `admin123`)
+- **`http://localhost:3000/store`** — customer shop (no login required)
+
+---
+
+## 💳 Stripe payments
+
+The storefront checkout uses Stripe's PaymentIntents + Stripe Elements. Flow:
+
+1. Customer fills the cart + address form → `POST /api/storefront/checkout/create-payment-intent`.
+2. Backend validates stock, **reserves** it (stock decrement + audit row), creates a
+   Stripe PaymentIntent, returns `client_secret` to the browser.
+3. Stripe Elements collects the card and confirms the PaymentIntent.
+4. On success, the browser calls `POST /api/storefront/checkout/confirm` and Stripe
+   also fires `payment_intent.succeeded` to `POST /api/storefront/checkout/webhook`.
+   Both flip the order to `PAID` idempotently.
+5. On failure/cancellation the order goes to `CANCELLED` and the stock is **restored**.
+
+Test card: **`4242 4242 4242 4242`**, any future expiry, any CVC, any ZIP.
+
+### Configuring Stripe locally
+
+Put this in `.env`:
+
+```dotenv
+STRIPE_PUBLISHABLE_KEY=pk_test_...
+STRIPE_SECRET_KEY=sk_test_...
+STRIPE_CURRENCY=try
+# optional — only needed if you run `stripe listen`:
+STRIPE_WEBHOOK_SECRET=whsec_...
+```
+
+To forward webhooks to your local backend (optional):
+
+```bash
+stripe listen --forward-to localhost:3000/api/storefront/checkout/webhook
+```
+
+Copy the `whsec_...` Stripe prints into `STRIPE_WEBHOOK_SECRET` and restart the backend.
+
+---
+
+## 🔐 Auth & roles
+
+JWT-based. Two roles:
+
+- **ADMIN** — full access to `/admin/*` and every management API.
+- **STAFF** — access to `/app/*`, can scan QR, sell, return, receive stock, generate QR
+  for new products.
+
+The storefront is public — customers don't sign in.
+
+---
+
+## 🧩 Backend API summary
+
+| Path                                              | Who         | Notes                                   |
+| ------------------------------------------------- | ----------- | --------------------------------------- |
+| `POST /api/auth/login`                            | public      | Returns JWT + role                      |
+| `GET /api/products`                               | STAFF+ADMIN | List all products                       |
+| `POST /api/products`                              | STAFF+ADMIN | Create product + initial stock          |
+| `PUT /api/products/{id}`                          | ADMIN       | Edit meta                               |
+| `DELETE /api/products/{id}`                       | ADMIN       |                                         |
+| `POST /api/products/qr/{uuid}/sell`               | STAFF+ADMIN | In-store sale via QR                    |
+| `POST /api/products/qr/{uuid}/return`             | STAFF+ADMIN | In-store return                         |
+| `POST /api/products/{id}/sizes/{size}/receive`    | STAFF+ADMIN | Warehouse inbound                       |
+| `GET /api/admin/orders`                           | ADMIN       | Online orders list                      |
+| `PUT /api/admin/orders/{id}/status`               | ADMIN       | PENDING → PAID → FULFILLED / CANCELLED  |
+| `GET /api/admin/discounts`                        | ADMIN       |                                         |
+| `GET /api/analytics/sales`                        | ADMIN       | 30-day stats for dashboard              |
+| `GET /api/storefront/products`                    | public      | Customer-facing catalog                 |
+| `POST /api/storefront/checkout/create-payment-intent` | public | Start checkout, reserves stock          |
+| `POST /api/storefront/checkout/confirm`           | public      | Idempotent payment confirmation         |
+| `POST /api/storefront/checkout/webhook`           | Stripe      | Idempotent payment confirmation         |
+
+---
+
+## 🧪 Running tests
+
+```bash
+cd backend
+./mvnw test
+```
+
+---
+
+## 🛠️ Developing each module on its own
+
+| Module           | Dev command                          | Port |
+| ---------------- | ------------------------------------ | ---- |
+| `backend`        | `./mvnw spring-boot:run`             | 8080 |
+| `admin-web`      | `npm --prefix admin-web run dev`     | 5174 |
+| `staff-pwa`      | `npm --prefix staff-pwa run dev`     | 5173 |
+| `storefront-web` | `npm --prefix storefront-web run dev`| 5175 |
+
+Each Vite dev server proxies `/api/*` to `localhost:8080`, so you can run modules
+individually without Docker.
+
+---
+
+## 🗄️ Database
+
+- PostgreSQL 15, migrations under `backend/src/main/resources/db/migration/`.
+- All schema changes go through new Flyway migrations (`V<N>__...sql`). The
+  latest migration (`V12`) adds Stripe + shipping fields to `customer_orders`.
+
+---
+
+## 📦 Default seed data
+
+The backend seeds two accounts on first boot:
+
+| Username | Password   | Role  |
+| -------- | ---------- | ----- |
+| `admin`  | `admin123` | ADMIN |
+| `staff`  | `admin123` | STAFF |
+
+Change these before deploying anywhere real.

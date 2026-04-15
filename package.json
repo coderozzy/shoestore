@@ -1,0 +1,13 @@
+{
+  "name": "shoestore-platform",
+  "private": true,
+  "version": "1.0.0",
+  "scripts": {
+    "dev:staff": "npm --prefix staff-pwa run dev",
+    "dev:admin": "npm --prefix admin-web run dev",
+    "dev:storefront": "npm --prefix storefront-web run dev",
+    "build:staff": "npm --prefix staff-pwa run build",
+    "build:admin": "npm --prefix admin-web run build",
+    "build:storefront": "npm --prefix storefront-web run build"
+  }
+}

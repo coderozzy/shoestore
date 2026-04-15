@@ -29,6 +29,9 @@ public class AnalyticsService {
                     Number salesCountValue = (Number) result[3];
                     long salesCount = salesCountValue == null ? 0L : salesCountValue.longValue();
                     BigDecimal unitPrice = (BigDecimal) result[4];
+                    if (unitPrice == null) {
+                        unitPrice = BigDecimal.ZERO;
+                    }
                     BigDecimal totalRevenue = unitPrice.multiply(BigDecimal.valueOf(salesCount));
                     
                     return SalesStatsDTO.builder()

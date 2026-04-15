@@ -20,9 +20,4 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
 
     @Query("SELECT p FROM Product p JOIN p.sizes s GROUP BY p HAVING SUM(s.stockQuantity) <= :threshold")
     List<Product> findLowStockProducts(@Param("threshold") int threshold);
-
-    @Query("SELECT p FROM Product p WHERE p.category.name = :categoryName")
-    List<Product> findByCategoryName(@Param("categoryName") String categoryName);
-
-    boolean existsByQrCodeValue(UUID qrCodeValue);
 }

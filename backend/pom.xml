@@ -23,6 +23,7 @@
         <mapstruct.version>1.5.5.Final</mapstruct.version>
         <zxing.version>3.5.2</zxing.version>
         <flyway.version>10.4.1</flyway.version>
+        <stripe.version>25.13.0</stripe.version>
     </properties>
 
     <dependencies>
@@ -89,6 +90,13 @@
             <groupId>com.google.zxing</groupId>
             <artifactId>javase</artifactId>
             <version>${zxing.version}</version>
+        </dependency>
+
+        <!-- Stripe payment SDK -->
+        <dependency>
+            <groupId>com.stripe</groupId>
+            <artifactId>stripe-java</artifactId>
+            <version>${stripe.version}</version>
         </dependency>
 
         <!-- Utilities -->

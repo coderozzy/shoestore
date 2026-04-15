@@ -7,6 +7,9 @@ WORKDIR /app
 COPY mvnw pom.xml ./
 COPY .mvn .mvn
 
+# Configure Maven to use IPv4 and retry on network drops (fixes Mac Docker MTU/timeout issues)
+ENV MAVEN_OPTS="-Djava.net.preferIPv4Stack=true -Dmaven.wagon.http.retryHandler.count=3"
+
 # Download dependencies
 RUN ./mvnw dependency:resolve
 

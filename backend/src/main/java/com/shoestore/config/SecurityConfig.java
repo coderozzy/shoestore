@@ -48,25 +48,26 @@ public class SecurityConfig {
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers("/error").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/products/*/qr-image").permitAll()
+                        .requestMatchers("/api/storefront/**").permitAll()
                         
                         // Admin only endpoints
-                        //.requestMatchers(HttpMethod.POST, "/api/products").hasRole("ADMIN") // Changed for Staff Goods Receipt
                         .requestMatchers(HttpMethod.PUT, "/api/products/**").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.DELETE, "/api/products/**").hasRole("ADMIN")
                         .requestMatchers("/api/products/low-stock").hasRole("ADMIN")
                         .requestMatchers("/api/analytics/**").hasRole("ADMIN")
                         .requestMatchers("/api/stock-movements/**").hasRole("ADMIN")
+                        .requestMatchers("/api/admin/**").hasRole("ADMIN")
                         
                         // Staff and Admin can access
                         .requestMatchers(HttpMethod.GET, "/api/products/**").hasAnyRole("STAFF", "ADMIN")
                         .requestMatchers(HttpMethod.POST, "/api/products").hasAnyRole("STAFF", "ADMIN")
-                        .requestMatchers(HttpMethod.POST, "/api/products/*/sell").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.POST, "/api/products/*/sell").hasAnyRole("STAFF", "ADMIN")
                         .requestMatchers(HttpMethod.POST, "/api/products/qr/*/sell").hasAnyRole("STAFF", "ADMIN")
                         // Allow Staff to manage sizes and stock
                         .requestMatchers(HttpMethod.POST, "/api/products/*/sizes").hasAnyRole("STAFF", "ADMIN")
                         .requestMatchers(HttpMethod.PUT, "/api/products/*/sizes/*").hasAnyRole("STAFF", "ADMIN")
-                        .requestMatchers(HttpMethod.POST, "/api/products/*/sizes/*/receive").hasRole("ADMIN")
-                        .requestMatchers(HttpMethod.POST, "/api/products/*/sizes/*/return").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.POST, "/api/products/*/sizes/*/receive").hasAnyRole("STAFF", "ADMIN")
+                        .requestMatchers(HttpMethod.POST, "/api/products/*/sizes/*/return").hasAnyRole("STAFF", "ADMIN")
                         .requestMatchers(HttpMethod.POST, "/api/products/qr/*/return").hasAnyRole("STAFF", "ADMIN")
                         
                         .requestMatchers("/api/categories/**").hasAnyRole("STAFF", "ADMIN")

@@ -55,10 +55,6 @@ public class ProductSize {
         updatedAt = LocalDateTime.now();
     }
 
-    public void decrementStock() {
-        decrementStock(1);
-    }
-
     public void decrementStock(int quantity) {
         if (quantity <= 0) {
             throw new IllegalStateException("Quantity must be greater than zero");
@@ -71,10 +67,9 @@ public class ProductSize {
     }
 
     public void incrementStock(int quantity) {
+        if (quantity <= 0) {
+            throw new IllegalStateException("Quantity must be greater than zero");
+        }
         stockQuantity += quantity;
-    }
-
-    public boolean isLowStock() {
-        return stockQuantity <= 5;
     }
 }

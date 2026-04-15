@@ -41,6 +41,7 @@ public class ProductService {
     private final UserRepository userRepository;
     private final ProductMapper productMapper;
     private final StockMovementService stockMovementService;
+    private final SaleService saleService;
 
     public List<ProductDTO> getAllProducts() {
         return productMapper.toDTOList(productRepository.findAll());
@@ -169,10 +170,15 @@ public class ProductService {
         }
         Product product = productRepository.findById(productId)
                 .orElseThrow(() -> new ResourceNotFoundException("Product", "id", productId));
-        
-        ProductSize productSize = productSizeRepository.findByProductIdAndSize(productId, size)
+
+        // Row-level lock the size to prevent concurrent oversell.
+        ProductSize productSize = productSizeRepository.findByProductIdAndSizeForUpdate(productId, size)
                 .orElseThrow(() -> new ResourceNotFoundException("ProductSize", "size", size));
-        
+
+        if (productSize.getStockQuantity() < quantity) {
+            throw new BadRequestException("Insufficient stock for size " + size);
+        }
+
         productSize.decrementStock(quantity);
         productSizeRepository.save(productSize);
 
@@ -183,8 +189,13 @@ public class ProductService {
                 MovementDirection.OUT,
                 StockMovementReason.SALE,
                 null);
-        
-        // Log sale to ScanHistory
+
+        // Record sale BEFORE publishing the stock-changed event so projection listeners
+        // see a consistent state. If recordStoreSale fails, the outer @Transactional
+        // rolls back every write above (stock decrement, movement, etc.).
+        saleService.recordStoreSale(product, size, quantity);
+
+        // Log sale to ScanHistory using the authenticated user.
         String username = SecurityContextHolder.getContext().getAuthentication().getName();
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new ResourceNotFoundException("User", "username", username));
@@ -260,10 +271,10 @@ public class ProductService {
         }
         Product product = productRepository.findById(productId)
                 .orElseThrow(() -> new ResourceNotFoundException("Product", "id", productId));
-        
-        ProductSize productSize = productSizeRepository.findByProductIdAndSize(productId, size)
+
+        ProductSize productSize = productSizeRepository.findByProductIdAndSizeForUpdate(productId, size)
                 .orElseThrow(() -> new ResourceNotFoundException("ProductSize", "size", size));
-        
+
         int previousQuantity = productSize.getStockQuantity();
         productSize.setStockQuantity(quantity);
         productSizeRepository.save(productSize);
@@ -294,7 +305,7 @@ public class ProductService {
         Product product = productRepository.findById(productId)
                 .orElseThrow(() -> new ResourceNotFoundException("Product", "id", productId));
 
-        ProductSize productSize = productSizeRepository.findByProductIdAndSize(productId, size)
+        ProductSize productSize = productSizeRepository.findByProductIdAndSizeForUpdate(productId, size)
                 .orElseThrow(() -> new ResourceNotFoundException("ProductSize", "size", size));
 
         productSize.incrementStock(quantity);
@@ -323,7 +334,7 @@ public class ProductService {
         Product product = productRepository.findById(productId)
                 .orElseThrow(() -> new ResourceNotFoundException("Product", "id", productId));
 
-        ProductSize productSize = productSizeRepository.findByProductIdAndSize(productId, size)
+        ProductSize productSize = productSizeRepository.findByProductIdAndSizeForUpdate(productId, size)
                 .orElseThrow(() -> new ResourceNotFoundException("ProductSize", "size", size));
 
         productSize.incrementStock(quantity);
@@ -348,13 +359,13 @@ public class ProductService {
         return returnStock(product.getId(), size, quantity, note);
     }
 
-    public Product getProductEntityById(Long id) {
-        return productRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Product", "id", id));
-    }
-
     public Product getProductEntityByQrCode(UUID qrCodeValue) {
         return productRepository.findByQrCodeValue(qrCodeValue)
                 .orElseThrow(() -> new ResourceNotFoundException("Product", "qrCode", qrCodeValue));
+    }
+
+    /** Expose DTO mapping so callers that already have a {@link Product} don't need a second query. */
+    public ProductDTO toDTO(Product product) {
+        return productMapper.toDTO(product);
     }
 }

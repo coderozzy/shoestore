@@ -45,7 +45,7 @@ public class ProductController {
     public ResponseEntity<ProductDTO> getProductByQrCode(@PathVariable UUID qrCode) {
         Product product = productService.getProductEntityByQrCode(qrCode);
         scanHistoryService.recordScan(product, "SCAN");
-        return ResponseEntity.ok(productService.getProductByQrCode(qrCode));
+        return ResponseEntity.ok(productService.toDTO(product));
     }
 
     @GetMapping("/gender/{gender}")
