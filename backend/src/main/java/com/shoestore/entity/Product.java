@@ -41,6 +41,23 @@ public class Product {
     @Column(nullable = false, precision = 10, scale = 2)
     private BigDecimal price;
 
+    @Column(name = "image_data_url", columnDefinition = "TEXT")
+    private String imageDataUrl;
+
+    @ElementCollection(fetch = FetchType.EAGER)
+    @CollectionTable(name = "product_images", joinColumns = @JoinColumn(name = "product_id"))
+    @OrderColumn(name = "image_order")
+    @Column(name = "image_data_url", columnDefinition = "TEXT")
+    @Builder.Default
+    private List<String> imageDataUrls = new ArrayList<>();
+
+    @Column(name = "published_to_store", nullable = false)
+    @Builder.Default
+    private boolean publishedToStore = false;
+
+    @Column(name = "store_display_order")
+    private Integer storeDisplayOrder;
+
     @Column(name = "qr_code_value", nullable = false, unique = true, updatable = false)
     @Builder.Default
     private UUID qrCodeValue = UUID.randomUUID();

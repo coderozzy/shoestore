@@ -30,9 +30,29 @@ public class CreateProductRequest {
 
     @NotNull(message = "Price is required")
     @DecimalMin(value = "0.01", message = "Price must be greater than 0")
+    @DecimalMax(value = "1000000.00", message = "Price must be no more than 1,000,000")
     private BigDecimal price;
 
+    // Data-URL images are sniffed/validated in ProductService. The @Size caps
+    // guard the HTTP layer against multi-megabyte spam before parsing.
+    @Size(max = 15_000_000, message = "Product image is too large")
+    @Pattern(
+            regexp = "^$|^data:image/(png|jpe?g|webp);base64,[A-Za-z0-9+/=]+$",
+            message = "Image must be a PNG/JPEG/WebP data URL"
+    )
+    private String imageDataUrl;
+
+    private List<@Size(max = 15_000_000, message = "Product image is too large")
+                 @Pattern(
+                         regexp = "^data:image/(png|jpe?g|webp);base64,[A-Za-z0-9+/=]+$",
+                         message = "Image must be a PNG/JPEG/WebP data URL"
+                 ) String> imageDataUrls;
+
+    private Boolean publishedToStore;
+    private Integer storeDisplayOrder;
+
     @NotEmpty(message = "At least one size is required")
+    @Size(max = 50, message = "At most 50 sizes per product")
     @Valid
     private List<SizeStockRequest> sizes;
 
@@ -57,6 +77,7 @@ public class CreateProductRequest {
 
         @NotNull(message = "Stock quantity is required")
         @Min(value = 0, message = "Stock quantity cannot be negative")
+        @Max(value = 100_000, message = "Stock quantity unreasonably high")
         private Integer stockQuantity;
     }
 }

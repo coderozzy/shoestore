@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import LoadingSpinner from '../components/LoadingSpinner';
 import productService from '../services/productService';
+import { openPrintableQr } from '../utils/printQr';
 import './GenerateQRPage.css';
 
 const SIZES = [35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45];
@@ -103,26 +104,19 @@ export default function GenerateQRPage() {
     };
 
     const handlePrintQR = () => {
-        const printWindow = window.open('', '_blank');
-        if (!printWindow) {
-            alert('Pop-up blocked. Please allow pop-ups and try again.');
-            return;
-        }
-        const sizesText = createdProduct?.sizes?.map((s) => `${s.size} (${s.stockQuantity})`).join(', ') || 'No Sizes';
-
-        printWindow.document.write(`
-            <html>
-                <head><title>QR Code - ${createdProduct?.modelName || 'Product'}</title></head>
-                <body style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;font-family:Arial;">
-                    <img src="${qrData.imageUrl}" style="width:300px;height:300px;" onload="window.print();"/>
-                    <h2>${createdProduct?.modelName || formData.modelName}</h2>
-                    <p>Color: ${createdProduct?.color || formData.color}</p>
-                    <p>Sizes: ${sizesText}</p>
-                    <p>Price: ₺${createdProduct?.price || formData.price}</p>
-                </body>
-            </html>
-        `);
-        printWindow.document.close();
+        const sizesText = createdProduct?.sizes?.map((s) => `${s.size} (${s.stockQuantity})`).join(', ')
+            || 'No Sizes';
+        const modelName = createdProduct?.modelName || formData.modelName;
+        openPrintableQr({
+            imageUrl: qrData?.imageUrl,
+            title: `QR Code - ${modelName || 'Product'}`,
+            lines: [
+                { heading: true, value: modelName },
+                { label: 'Color', value: createdProduct?.color || formData.color },
+                { label: 'Sizes', value: sizesText },
+                { label: 'Price', value: `₺${createdProduct?.price || formData.price}` }
+            ]
+        });
     };
 
     return (

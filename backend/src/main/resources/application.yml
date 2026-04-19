@@ -1,14 +1,18 @@
 server:
   port: 8080
+  # Hide the Spring Boot / embedded server version from error responses.
+  error:
+    include-stacktrace: never
+    include-message: never
 
 spring:
   application:
     name: shoestore-backend
 
   datasource:
-    url: jdbc:postgresql://127.0.0.1:5433/shoestore
-    username: postgres
-    password: postgres
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://127.0.0.1:5433/shoestore}
+    username: ${SPRING_DATASOURCE_USERNAME:postgres}
+    password: ${SPRING_DATASOURCE_PASSWORD:postgres}
     driver-class-name: org.postgresql.Driver
 
   jpa:
@@ -25,24 +29,57 @@ spring:
     baseline-on-migrate: true
     locations: classpath:db/migration
 
-# JWT Configuration
+# JWT. JWT_SECRET is required — the application refuses to start if it is missing,
+# too short, or not base64 (see JwtTokenProvider).
+# Generate with:  openssl rand -base64 48
 jwt:
-  secret: ${JWT_SECRET:9a4f2c8d3b7e1g5h9j2k4l6m8n0p2q4r6t8w0y2z4x6v8u0s2q4o6m8k0i}
-  expiration: 86400000  # 24 hours in milliseconds
+  secret: ${JWT_SECRET}
+  # 15-minute access token. Short TTL bounds the blast radius of a stolen
+  # cookie; the token_version column on `users` gives the admin a forced
+  # logout lever for anything in the meantime.
+  expiration: ${JWT_EXPIRATION_MS:900000}
+  issuer: ${JWT_ISSUER:shoestore-backend}
+  audience: ${JWT_AUDIENCE:shoestore-clients}
+
+# Browser-facing auth cookie. Secure=true requires HTTPS end-to-end; flip via
+# env in plain-HTTP dev (docker-compose sets AUTH_COOKIE_SECURE=false there).
+auth:
+  cookie:
+    secure: ${AUTH_COOKIE_SECURE:true}
+    same-site: ${AUTH_COOKIE_SAMESITE:Strict}
 
 # App configuration
 app:
   cors:
-    allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:5173,http://localhost:3000}
+    # Must be an explicit, tight list in production.
+    allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:3000}
 
-# Stripe configuration (test keys are consumed via environment variables).
+  # Customer order lookup token. Signed HMAC tied to orderId+paymentIntentId.
+  order-token:
+    secret: ${ORDER_TOKEN_SECRET:${JWT_SECRET}}
+    ttl-ms: ${ORDER_TOKEN_TTL_MS:604800000}
+
+  # Bootstrap admin — applied only on first boot when users table is empty.
+  bootstrap:
+    enabled: ${BOOTSTRAP_USERS_ENABLED:true}
+    admin-username: ${BOOTSTRAP_ADMIN_USERNAME:admin}
+    admin-password: ${BOOTSTRAP_ADMIN_PASSWORD:}
+    admin-email: ${BOOTSTRAP_ADMIN_EMAIL:admin@shoestore.local}
+
+ai:
+  image:
+    api-key: ${AI_IMAGE_API_KEY:}
+    model: ${AI_IMAGE_MODEL:gemini-2.5-flash-image}
+    max-bytes: ${AI_IMAGE_MAX_BYTES:10000000}
+
+# Stripe
 stripe:
   secret-key: ${STRIPE_SECRET_KEY:}
   webhook-secret: ${STRIPE_WEBHOOK_SECRET:}
   currency: ${STRIPE_CURRENCY:try}
 
-# Logging
 logging:
   level:
-    com.shoestore: DEBUG
+    # INFO by default; devs flip to DEBUG via APP_LOG_LEVEL=DEBUG at runtime.
+    com.shoestore: ${APP_LOG_LEVEL:INFO}
     org.springframework.security: INFO

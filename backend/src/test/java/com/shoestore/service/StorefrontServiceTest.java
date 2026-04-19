@@ -44,6 +44,7 @@ class StorefrontServiceTest {
                 .modelName("Street Runner")
                 .color("White")
                 .price(BigDecimal.valueOf(300))
+                .publishedToStore(true)
                 .category(Category.builder().name("MEN").build())
                 .sizes(List.of(
                         ProductSize.builder().id(1L).size(BigDecimal.valueOf(41)).stockQuantity(2).build(),
@@ -51,7 +52,7 @@ class StorefrontServiceTest {
                 ))
                 .build();
 
-        when(productRepository.findAll()).thenReturn(List.of(product));
+        when(productRepository.findPublishedForStorefront()).thenReturn(List.of(product));
         when(productDiscountRepository.findByProductId(product.getId())).thenReturn(List.of(
                 ProductDiscount.builder()
                         .product(product)

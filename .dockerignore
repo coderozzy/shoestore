@@ -1,4 +1,25 @@
+# Secrets — never copy local env into any image's build context.
+.env
+.env.*
+!.env.example
+
+# Git metadata — contains refs/stashes/branches that might embed secrets.
+**/.git
+**/.gitignore
+
+# Dependency trees and build artifacts — always rebuild inside the image.
 **/node_modules
 **/dist
-**/.git
+**/target
+**/.mvn
+
+# OS / editor cruft
 **/.DS_Store
+**/.idea
+**/.vscode
+
+# Log files — may contain secrets printed at dev time.
+**/*.log
+
+# Security audit — not needed in images.
+SECURITY_AUDIT.md

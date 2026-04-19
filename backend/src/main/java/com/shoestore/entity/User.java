@@ -45,6 +45,17 @@ public class User implements UserDetails {
     @Builder.Default
     private Boolean enabled = true;
 
+    /**
+     * Monotonic token generation counter. Every issued JWT stamps the current
+     * value into its {@code tv} claim; the filter rejects any token whose
+     * {@code tv} is below the user's current version. Incrementing this on
+     * logout / disable / password change instantly revokes all outstanding
+     * tokens without a Redis blocklist (H-8).
+     */
+    @Column(name = "token_version", nullable = false)
+    @Builder.Default
+    private Long tokenVersion = 0L;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
@@ -75,6 +86,6 @@ public class User implements UserDetails {
 
     @Override
     public boolean isEnabled() {
-        return enabled;
+        return enabled != null && enabled;
     }
 }

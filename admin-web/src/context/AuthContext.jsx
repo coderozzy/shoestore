@@ -8,11 +8,21 @@ export function AuthProvider({ children }) {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        const storedUser = authService.getUser();
-        if (storedUser && authService.isAuthenticated()) {
-            setUser(storedUser);
-        }
-        setLoading(false);
+        let cancelled = false;
+        // Cookie-based auth means we can't tell from JS alone whether the
+        // browser still holds a valid session cookie. Ask the server.
+        authService.refreshUser()
+            .then((refreshed) => {
+                if (!cancelled) {
+                    setUser(refreshed);
+                }
+            })
+            .finally(() => {
+                if (!cancelled) setLoading(false);
+            });
+        return () => {
+            cancelled = true;
+        };
     }, []);
 
     const login = async (username, password) => {
@@ -21,8 +31,8 @@ export function AuthProvider({ children }) {
         return response;
     };
 
-    const logout = () => {
-        authService.logout();
+    const logout = async () => {
+        await authService.logout();
         setUser(null);
     };
 

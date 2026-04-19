@@ -20,7 +20,7 @@ public class StorefrontService {
 
     @Transactional(readOnly = true)
     public List<StorefrontProductDTO> getProducts() {
-        return productRepository.findAll().stream()
+        return productRepository.findPublishedForStorefront().stream()
                 .map(this::toDTO)
                 .toList();
     }
@@ -31,6 +31,7 @@ public class StorefrontService {
     }
 
     private StorefrontProductDTO toDTO(Product product) {
+        List<String> images = resolveProductImages(product);
         return StorefrontProductDTO.builder()
                 .id(product.getId())
                 .modelName(product.getModelName())
@@ -38,6 +39,8 @@ public class StorefrontService {
                 .color(product.getColor())
                 .originalPrice(product.getPrice())
                 .effectivePrice(pricingService.getEffectivePrice(product))
+                .imageDataUrl(images.isEmpty() ? null : images.get(0))
+                .imageDataUrls(images)
                 .discounted(pricingService.isDiscounted(product))
                 .discountName(pricingService.getDiscountName(product))
                 .sizes(product.getSizes().stream()
@@ -50,5 +53,15 @@ public class StorefrontService {
                 .totalStock(product.getTotalStock())
                 .categoryName(product.getCategory() != null ? product.getCategory().getName() : null)
                 .build();
+    }
+
+    private List<String> resolveProductImages(Product product) {
+        if (product.getImageDataUrls() != null && !product.getImageDataUrls().isEmpty()) {
+            return product.getImageDataUrls();
+        }
+        if (product.getImageDataUrl() != null && !product.getImageDataUrl().isBlank()) {
+            return List.of(product.getImageDataUrl());
+        }
+        return List.of();
     }
 }

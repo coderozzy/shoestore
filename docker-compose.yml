@@ -2,16 +2,18 @@ services:
   db:
     image: postgres:15-alpine
     container_name: shoestore-db
+    # Bind only to the loopback interface so the database is reachable for
+    # `psql` on the host but never exposed on the LAN. Remove entirely in prod.
     ports:
-      - "5433:5432"
+      - "127.0.0.1:5433:5432"
     environment:
-      POSTGRES_DB: shoestore
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: ${POSTGRES_DB:?POSTGRES_DB required}
+      POSTGRES_USER: ${POSTGRES_USER:?POSTGRES_USER required}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD required}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER}"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -19,25 +21,45 @@ services:
   backend:
     build: ./backend
     container_name: shoestore-backend
-    ports:
-      - "8080:8080"
+    # No host port — the reverse proxy is the only public entry point.
+    # Headers, CSP, and rate limits in nginx would be bypassed if the backend
+    # port were reachable directly.
+    expose:
+      - "8080"
     environment:
-      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/shoestore
-      SPRING_DATASOURCE_USERNAME: postgres
-      SPRING_DATASOURCE_PASSWORD: postgres
-      JWT_SECRET: ${JWT_SECRET:-mySecretKeyForJWTTokenGenerationThatIsAtLeast256BitsLongForHS256Algorithm}
-      CORS_ALLOWED_ORIGINS: http://localhost:3000,http://localhost:3001,http://localhost:3002,http://localhost:3003,http://localhost:8080
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/${POSTGRES_DB:?POSTGRES_DB required}
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:?POSTGRES_USER required}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD required}
+      # JWT_SECRET is required — no default, fail fast if missing.
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET required (openssl rand -base64 48)}
+      JWT_EXPIRATION_MS: ${JWT_EXPIRATION_MS:-900000}
+      JWT_ISSUER: ${JWT_ISSUER:-shoestore-backend}
+      JWT_AUDIENCE: ${JWT_AUDIENCE:-shoestore-clients}
+      ORDER_TOKEN_SECRET: ${ORDER_TOKEN_SECRET:-}
+      ORDER_TOKEN_TTL_MS: ${ORDER_TOKEN_TTL_MS:-604800000}
+      BOOTSTRAP_USERS_ENABLED: ${BOOTSTRAP_USERS_ENABLED:-true}
+      BOOTSTRAP_ADMIN_USERNAME: ${BOOTSTRAP_ADMIN_USERNAME:-admin}
+      BOOTSTRAP_ADMIN_PASSWORD: ${BOOTSTRAP_ADMIN_PASSWORD:-}
+      BOOTSTRAP_ADMIN_EMAIL: ${BOOTSTRAP_ADMIN_EMAIL:-admin@shoestore.local}
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:3000}
       STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY:-}
       STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET:-}
       STRIPE_CURRENCY: ${STRIPE_CURRENCY:-try}
+      AI_IMAGE_API_KEY: ${AI_IMAGE_API_KEY:-}
+      AI_IMAGE_MODEL: ${AI_IMAGE_MODEL:-gemini-2.5-flash-image}
+      AI_IMAGE_MAX_BYTES: ${AI_IMAGE_MAX_BYTES:-10000000}
+      APP_LOG_LEVEL: ${APP_LOG_LEVEL:-INFO}
+      # AUTH_COOKIE_SECURE=false is appropriate for local HTTP dev only.
+      # Flip to true in any environment that terminates TLS.
+      AUTH_COOKIE_SECURE: ${AUTH_COOKIE_SECURE:-false}
     depends_on:
       db:
         condition: service_healthy
 
   staff-pwa:
     container_name: shoestore-staff-pwa
-    ports:
-      - "3001:80"
+    expose:
+      - "80"
     build:
       context: ./staff-pwa
       args:
@@ -50,15 +72,15 @@ services:
       context: .
       dockerfile: admin-web/Dockerfile
     container_name: shoestore-admin-web
-    ports:
-      - "3002:80"
+    expose:
+      - "80"
     depends_on:
       - backend
 
   storefront-web:
     container_name: shoestore-storefront-web
-    ports:
-      - "3003:80"
+    expose:
+      - "80"
     build:
       context: ./storefront-web
       args:
@@ -69,6 +91,8 @@ services:
   reverse-proxy:
     image: nginx:alpine
     container_name: shoestore-gateway
+    # Public surface is intentionally a single nginx process: it holds the CSP,
+    # security headers, rate limits, and the raw-body webhook location.
     ports:
       - "3000:80"
     volumes:

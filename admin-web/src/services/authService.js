@@ -1,26 +1,71 @@
 import api from './api.js';
 
+const USER_KEY = 'admin-user';
+
+// Non-sensitive profile cache. The actual JWT now lives in an HttpOnly cookie
+// set by the backend at /api/auth/login (C-7). JavaScript cannot read it, so
+// XSS can't exfiltrate it.
+function readCachedUser() {
+    try {
+        const raw = sessionStorage.getItem(USER_KEY);
+        return raw ? JSON.parse(raw) : null;
+    } catch {
+        return null;
+    }
+}
+
+function writeCachedUser(user) {
+    try {
+        sessionStorage.setItem(USER_KEY, JSON.stringify(user));
+    } catch {
+        // ignore storage failures (private mode etc.)
+    }
+}
+
+function clearCachedUser() {
+    try {
+        sessionStorage.removeItem(USER_KEY);
+    } catch {
+        // noop
+    }
+}
+
 export const authService = {
     async login(username, password) {
         const response = await api.post('/auth/login', { username, password });
-        const { token, username: user, role } = response.data;
-        localStorage.setItem('token', token);
-        localStorage.setItem('user', JSON.stringify({ username: user, role }));
-        return response.data;
+        const { username: user, role } = response.data;
+        writeCachedUser({ username: user, role });
+        return { username: user, role };
     },
 
-    logout() {
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
+    async logout() {
+        try {
+            await api.post('/auth/logout');
+        } catch {
+            // Even if the server call fails (expired cookie, 401) we still
+            // want the local state cleared.
+        }
+        clearCachedUser();
+    },
+
+    async refreshUser() {
+        try {
+            const response = await api.get('/auth/me');
+            const { username, role } = response.data;
+            writeCachedUser({ username, role });
+            return { username, role };
+        } catch {
+            clearCachedUser();
+            return null;
+        }
     },
 
     getUser() {
-        const raw = localStorage.getItem('user');
-        return raw ? JSON.parse(raw) : null;
+        return readCachedUser();
     },
 
     isAuthenticated() {
-        return !!localStorage.getItem('token');
+        return !!readCachedUser();
     }
 };
 

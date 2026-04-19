@@ -21,6 +21,10 @@ public class ProductDTO {
     private Gender gender;
     private String color;
     private BigDecimal price;
+    private String imageDataUrl;
+    private List<String> imageDataUrls;
+    private boolean publishedToStore;
+    private Integer storeDisplayOrder;
     private List<ProductSizeDTO> sizes;
     private Integer totalStock;
     private UUID qrCodeValue;

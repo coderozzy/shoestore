@@ -8,13 +8,18 @@ const formatPrice = (value) => {
 export default function StoreProductCard({ product }) {
     const totalStock = product.sizes?.reduce((sum, s) => sum + (s.stockQuantity || 0), 0) ?? 0;
     const outOfStock = totalStock === 0;
+    const primaryImage = product.imageDataUrls?.[0] || product.imageDataUrl;
     const showStrike = product.discounted
         && product.originalPrice != null
         && Number(product.originalPrice) !== Number(product.effectivePrice);
 
     return (
         <Link to={`/product/${product.id}`} className={`store-card ${outOfStock ? 'out-of-stock' : ''}`}>
-            <div className="store-card-image">👟</div>
+            <div className="store-card-image">
+                {primaryImage ? (
+                    <img src={primaryImage} alt={product.modelName} loading="lazy" />
+                ) : '👟'}
+            </div>
             <div className="store-card-body">
                 <h3 className="store-card-title">{product.modelName}</h3>
                 <p className="store-card-meta">

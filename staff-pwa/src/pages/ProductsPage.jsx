@@ -4,6 +4,8 @@ import ProductCard from '../components/ProductCard';
 import GenderFilter from '../components/GenderFilter';
 import LoadingSpinner from '../components/LoadingSpinner';
 import productService from '../services/productService';
+import authService from '../services/authService';
+import { openPrintableQr } from '../utils/printQr';
 import './ProductsPage.css';
 
 export default function ProductsPage() {
@@ -14,17 +16,7 @@ export default function ProductsPage() {
     const [genderFilter, setGenderFilter] = useState('ALL');
     const [searchTerm, setSearchTerm] = useState('');
 
-    // Resolve the current user role synchronously from localStorage so it is
-    // available on the first render — avoids a race where openActionModal()
-    // runs before a useEffect-derived role is set.
-    const [userRole] = useState(() => {
-        try {
-            const raw = localStorage.getItem('user');
-            return raw ? JSON.parse(raw)?.role ?? null : null;
-        } catch {
-            return null;
-        }
-    });
+    const [userRole] = useState(() => authService.getUser()?.role ?? null);
 
     const fetchProducts = useCallback(async () => {
         setLoading(true);
@@ -136,39 +128,52 @@ export default function ProductsPage() {
     };
 
     const [selectedQrProduct, setSelectedQrProduct] = useState(null);
+    const [qrImageUrl, setQrImageUrl] = useState('');
+
+    useEffect(() => {
+        if (!selectedQrProduct) {
+            setQrImageUrl('');
+            return undefined;
+        }
+        let revoked = false;
+        let url = '';
+        productService.fetchQrImageObjectUrl(selectedQrProduct.id)
+            .then((objectUrl) => {
+                if (revoked) {
+                    URL.revokeObjectURL(objectUrl);
+                    return;
+                }
+                url = objectUrl;
+                setQrImageUrl(objectUrl);
+            })
+            .catch(() => setQrImageUrl(''));
+        return () => {
+            revoked = true;
+            if (url) URL.revokeObjectURL(url);
+        };
+    }, [selectedQrProduct]);
 
     const handleShowQr = (product) => setSelectedQrProduct(product);
     const handleCloseQrModal = () => setSelectedQrProduct(null);
 
     const handlePrintQr = () => {
         if (!selectedQrProduct) return;
-
-        const qrUrl = productService.getQrCodeImageUrl(selectedQrProduct.id);
-        const printWindow = window.open('', '_blank');
-        if (!printWindow) {
-            alert('Pop-up blocked. Please allow pop-ups and try again.');
+        if (!qrImageUrl) {
+            alert('QR image is still loading, try again in a moment.');
             return;
         }
-
         const sizesText = selectedQrProduct.sizes?.map((s) => `${s.size} (${s.stockQuantity})`).join(', ')
             || 'Out of Stock';
-        const modelName = selectedQrProduct.modelName ?? '';
-        const color = selectedQrProduct.color ?? '';
-        const price = selectedQrProduct.price ?? '';
-
-        printWindow.document.write(`
-            <html>
-                <head><title>QR Kod - ${modelName}</title></head>
-                <body style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;font-family:Arial;">
-                    <img src="${qrUrl}" style="width:300px;height:300px;" onload="window.print();"/>
-                    <h2>${modelName}</h2>
-                    <p>Renk: ${color}</p>
-                    <p>Bedenler: ${sizesText}</p>
-                    <p>Fiyat: ₺${price}</p>
-                </body>
-            </html>
-        `);
-        printWindow.document.close();
+        openPrintableQr({
+            imageUrl: qrImageUrl,
+            title: `QR Kod - ${selectedQrProduct.modelName || 'Product'}`,
+            lines: [
+                { label: 'Model', value: selectedQrProduct.modelName || '' },
+                { label: 'Renk', value: selectedQrProduct.color || '' },
+                { label: 'Bedenler', value: sizesText },
+                { label: 'Fiyat', value: `₺${selectedQrProduct.price ?? ''}` }
+            ]
+        });
     };
 
     const handleDelete = async (productId) => {
@@ -214,7 +219,6 @@ export default function ProductsPage() {
 
     return (
         <div className="products-page">
-            {/* QR Code Modal */}
             {selectedQrProduct && (
                 <div className="qr-modal-overlay" onClick={handleCloseQrModal}>
                     <div className="qr-modal-content" onClick={(e) => e.stopPropagation()}>
@@ -223,11 +227,9 @@ export default function ProductsPage() {
                             <button className="close-btn" onClick={handleCloseQrModal}>×</button>
                         </div>
                         <div className="qr-modal-body">
-                            <img
-                                src={productService.getQrCodeImageUrl(selectedQrProduct.id)}
-                                alt="Product QR Code"
-                                className="qr-image-large"
-                            />
+                            {qrImageUrl
+                                ? <img src={qrImageUrl} alt="Product QR Code" className="qr-image-large" />
+                                : <LoadingSpinner text="Loading QR code..." />}
                             <h4>{selectedQrProduct.modelName}</h4>
                             <p className="qr-value-text">{selectedQrProduct.qrCodeValue}</p>
                         </div>

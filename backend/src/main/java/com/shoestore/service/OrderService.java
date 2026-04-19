@@ -4,6 +4,7 @@ import com.shoestore.dto.CheckoutRequest;
 import com.shoestore.dto.CheckoutResponse;
 import com.shoestore.dto.OrderDTO;
 import com.shoestore.dto.OrderItemDTO;
+import com.shoestore.dto.StorefrontOrderDTO;
 import com.shoestore.entity.CustomerOrder;
 import com.shoestore.entity.OrderItem;
 import com.shoestore.entity.Product;
@@ -16,34 +17,42 @@ import com.shoestore.exception.ResourceNotFoundException;
 import com.shoestore.repository.CustomerOrderRepository;
 import com.shoestore.repository.ProductRepository;
 import com.shoestore.repository.ProductSizeRepository;
+import com.shoestore.security.OrderLookupTokenService;
 import com.stripe.model.PaymentIntent;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.EnumSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 /**
- * Orchestrates the lifecycle of customer-facing (online) orders. Flow:
+ * Orchestrates the lifecycle of customer-facing (online) orders.
  *
- *   1. {@link #initiateCheckout(CheckoutRequest)} — validates cart, reserves
- *      stock, creates a PENDING order and a Stripe PaymentIntent. Returns the
- *      client_secret the storefront uses with Stripe Elements.
- *   2. Stripe Elements confirms the card on the client side.
- *   3. Either {@link #confirmPayment(String)} (called by the storefront after
- *      Stripe Elements resolves) or {@link #markPaidByWebhook(String, String)}
- *      (called from the Stripe webhook) flips the order to PAID. Both are
- *      idempotent so whichever arrives first wins.
- *   4. {@link #markPaymentFailed(String)} restores stock on a failed payment.
+ * Status transition rules are intentionally restrictive — there's no way to
+ * go CANCELLED → PAID (which was H-7: stock desync). Only the Stripe webhook
+ * and the {@code /checkout/confirm} round-trip can flip PENDING → PAID.
+ * Admin tooling can fulfill a paid order or cancel any non-final order.
  */
 @Service
 @RequiredArgsConstructor
 @Slf4j
 public class OrderService {
+
+    private static final Map<OrderStatus, Set<OrderStatus>> ALLOWED_ADMIN_TRANSITIONS = Map.of(
+            // From PENDING an admin can only cancel (refund is handled via Stripe on payment side).
+            OrderStatus.PENDING, EnumSet.of(OrderStatus.CANCELLED),
+            OrderStatus.PAID, EnumSet.of(OrderStatus.FULFILLED, OrderStatus.CANCELLED),
+            OrderStatus.FULFILLED, EnumSet.of(OrderStatus.CANCELLED),
+            OrderStatus.CANCELLED, EnumSet.noneOf(OrderStatus.class)
+    );
 
     private final CustomerOrderRepository customerOrderRepository;
     private final ProductRepository productRepository;
@@ -51,6 +60,8 @@ public class OrderService {
     private final PricingService pricingService;
     private final StockMovementService stockMovementService;
     private final StripeService stripeService;
+    private final OrderLookupTokenService orderLookupTokenService;
+    private final AuditLogService auditLogService;
 
     @Transactional
     public CheckoutResponse initiateCheckout(CheckoutRequest request) {
@@ -82,8 +93,6 @@ public class OrderService {
             Product product = productRepository.findById(itemRequest.getProductId())
                     .orElseThrow(() -> new ResourceNotFoundException(
                             "Product", "id", itemRequest.getProductId()));
-            // Lock the ProductSize row to prevent two concurrent checkouts from
-            // overselling the last pair of a given size.
             ProductSize productSize = productSizeRepository
                     .findByProductIdAndSizeForUpdate(product.getId(), itemRequest.getSize())
                     .orElseThrow(() -> new ResourceNotFoundException(
@@ -94,7 +103,6 @@ public class OrderService {
                         + product.getModelName() + " size " + itemRequest.getSize());
             }
 
-            // Audit trail first so if it fails the stock is never decremented.
             stockMovementService.recordSystemMovement(
                     product,
                     itemRequest.getSize(),
@@ -122,7 +130,6 @@ public class OrderService {
         }
         order.setTotalAmount(totalAmount);
 
-        // Persist the order first so the PaymentIntent can carry a real order_id.
         CustomerOrder savedOrder = customerOrderRepository.save(order);
 
         PaymentIntent paymentIntent = stripeService.createPaymentIntent(
@@ -134,25 +141,42 @@ public class OrderService {
         savedOrder.setStripePaymentStatus(paymentIntent.getStatus());
         customerOrderRepository.save(savedOrder);
 
+        String lookupToken = orderLookupTokenService.issue(
+                savedOrder.getId(), paymentIntent.getId());
+
         return CheckoutResponse.builder()
                 .orderId(savedOrder.getId())
                 .clientSecret(paymentIntent.getClientSecret())
                 .paymentIntentId(paymentIntent.getId())
+                .lookupToken(lookupToken)
                 .amount(totalAmount)
                 .currency(paymentIntent.getCurrency())
                 .build();
     }
 
-    /** Called by the storefront after Stripe Elements confirms the card. */
+    /**
+     * Called by the storefront after Stripe Elements confirms the card. The
+     * storefront must prove ownership with the lookup token issued at
+     * create-payment-intent time (C-4).
+     */
     @Transactional
-    public OrderDTO confirmPayment(String paymentIntentId) {
-        CustomerOrder order = customerOrderRepository.findByStripePaymentIntentId(paymentIntentId)
-                .orElseThrow(() -> new ResourceNotFoundException(
-                        "Order", "stripePaymentIntentId", paymentIntentId));
+    public StorefrontOrderDTO confirmPayment(Long orderId, String paymentIntentId, String lookupToken) {
+        orderLookupTokenService.verify(lookupToken, orderId);
+
+        CustomerOrder order = customerOrderRepository.findById(orderId)
+                .orElseThrow(() -> new ResourceNotFoundException("Order", "id", orderId));
+
+        // Token binds (orderId, paymentIntentId); refuse if the client
+        // is trying to confirm against a different PaymentIntent than the
+        // one originally attached to this order.
+        if (order.getStripePaymentIntentId() == null
+                || !order.getStripePaymentIntentId().equals(paymentIntentId)) {
+            throw new BadRequestException("Payment intent does not match order");
+        }
 
         PaymentIntent pi = stripeService.retrievePaymentIntent(paymentIntentId);
         applyPaymentIntentState(order, pi.getStatus());
-        return toDTO(customerOrderRepository.save(order));
+        return toStorefrontDTO(customerOrderRepository.save(order));
     }
 
     /** Idempotent: flips order to PAID if Stripe reports success. */
@@ -165,7 +189,6 @@ public class OrderService {
                 });
     }
 
-    /** Called on Stripe's {@code payment_intent.payment_failed} — restores stock. */
     @Transactional
     public void markPaymentFailed(String paymentIntentId) {
         Optional<CustomerOrder> maybeOrder = customerOrderRepository
@@ -174,7 +197,7 @@ public class OrderService {
 
         CustomerOrder order = maybeOrder.get();
         if (order.getStatus() == OrderStatus.CANCELLED || order.getStatus() == OrderStatus.PAID) {
-            return; // idempotent
+            return;
         }
         restoreStock(order, "Online order (payment failed)");
         order.setStatus(OrderStatus.CANCELLED);
@@ -185,12 +208,18 @@ public class OrderService {
     private void applyPaymentIntentState(CustomerOrder order, String stripeStatus) {
         order.setStripePaymentStatus(stripeStatus);
         if ("succeeded".equals(stripeStatus)) {
-            if (order.getStatus() != OrderStatus.PAID) {
+            if (order.getStatus() == OrderStatus.PENDING) {
                 order.setStatus(OrderStatus.PAID);
                 order.setPaidAt(LocalDateTime.now());
+            } else if (order.getStatus() == OrderStatus.CANCELLED) {
+                // Stock was already restored; we cannot silently re-decrement and
+                // flip back to PAID because that's H-7. Payment capture after
+                // cancellation is a manual refund path for the admin instead.
+                log.warn("Stripe reports succeeded for cancelled order {} — requires manual review",
+                        order.getId());
             }
         } else if ("canceled".equals(stripeStatus) || "payment_failed".equals(stripeStatus)) {
-            if (order.getStatus() != OrderStatus.CANCELLED) {
+            if (order.getStatus() == OrderStatus.PENDING) {
                 restoreStock(order, "Online order (" + stripeStatus + ")");
                 order.setStatus(OrderStatus.CANCELLED);
             }
@@ -223,21 +252,79 @@ public class OrderService {
                 .toList();
     }
 
+    /** Admin view — full PII. */
     @Transactional(readOnly = true)
     public OrderDTO getOrderById(Long orderId) {
         return toDTO(customerOrderRepository.findById(orderId)
                 .orElseThrow(() -> new ResourceNotFoundException("Order", "id", orderId)));
     }
 
+    /** Storefront view — PII stripped, token-gated. */
+    @Transactional(readOnly = true)
+    public StorefrontOrderDTO getOrderForCustomer(Long orderId, String lookupToken) {
+        orderLookupTokenService.verify(lookupToken, orderId);
+        return toStorefrontDTO(customerOrderRepository.findById(orderId)
+                .orElseThrow(() -> new ResourceNotFoundException("Order", "id", orderId)));
+    }
+
+    /**
+     * Admin status update. Transitions are whitelisted to prevent H-7
+     * (CANCELLED → PAID with no stock re-decrement) and to keep the audit
+     * trail meaningful.
+     */
     @Transactional
-    public OrderDTO updateStatus(Long orderId, OrderStatus status) {
+    public OrderDTO updateStatus(Long orderId, OrderStatus newStatus) {
         CustomerOrder order = customerOrderRepository.findById(orderId)
                 .orElseThrow(() -> new ResourceNotFoundException("Order", "id", orderId));
-        if (status == OrderStatus.CANCELLED && order.getStatus() != OrderStatus.CANCELLED) {
+
+        OrderStatus current = order.getStatus();
+        if (current == newStatus) {
+            return toDTO(order);
+        }
+
+        Set<OrderStatus> allowed = ALLOWED_ADMIN_TRANSITIONS.getOrDefault(
+                current, EnumSet.noneOf(OrderStatus.class));
+        if (!allowed.contains(newStatus)) {
+            throw new BadRequestException(
+                    "Illegal order status transition: " + current + " -> " + newStatus);
+        }
+
+        if (newStatus == OrderStatus.CANCELLED && current != OrderStatus.CANCELLED) {
             restoreStock(order, "Admin cancellation");
         }
-        order.setStatus(status);
-        return toDTO(customerOrderRepository.save(order));
+        order.setStatus(newStatus);
+        OrderDTO saved = toDTO(customerOrderRepository.save(order));
+
+        auditLogService.record(
+                "ORDER_STATUS_UPDATE",
+                "CustomerOrder",
+                orderId,
+                current.name(),
+                newStatus.name()
+        );
+        return saved;
+    }
+
+    /**
+     * H-4 mitigation: sweeps PENDING orders that never completed payment so
+     * their stock returns to circulation. Runs every 10 minutes, cancels
+     * anything older than 30 minutes.
+     */
+    @Scheduled(fixedDelayString = "${app.order-sweeper.interval-ms:600000}")
+    @Transactional
+    public void sweepAbandonedCheckouts() {
+        LocalDateTime cutoff = LocalDateTime.now().minusMinutes(30);
+        List<CustomerOrder> stale = customerOrderRepository
+                .findByStatusAndCreatedAtBefore(OrderStatus.PENDING, cutoff);
+        for (CustomerOrder order : stale) {
+            restoreStock(order, "Abandoned checkout sweep");
+            order.setStatus(OrderStatus.CANCELLED);
+            if (order.getStripePaymentStatus() == null) {
+                order.setStripePaymentStatus("abandoned");
+            }
+            customerOrderRepository.save(order);
+            log.info("Swept abandoned order {} (was PENDING for >30m)", order.getId());
+        }
     }
 
     private OrderDTO toDTO(CustomerOrder order) {
@@ -259,17 +346,34 @@ public class OrderService {
                 .stripePaymentStatus(order.getStripePaymentStatus())
                 .paidAt(order.getPaidAt())
                 .items(order.getItems().stream()
-                        .map(item -> OrderItemDTO.builder()
-                                .id(item.getId())
-                                .productId(item.getProduct().getId())
-                                .productName(item.getProduct().getModelName())
-                                .color(item.getProduct().getColor())
-                                .size(item.getSize())
-                                .quantity(item.getQuantity())
-                                .unitPrice(item.getUnitPrice())
-                                .totalPrice(item.getTotalPrice())
-                                .build())
+                        .map(this::toItemDTO)
                         .toList())
+                .build();
+    }
+
+    private StorefrontOrderDTO toStorefrontDTO(CustomerOrder order) {
+        return StorefrontOrderDTO.builder()
+                .id(order.getId())
+                .status(order.getStatus())
+                .totalAmount(order.getTotalAmount())
+                .createdAt(order.getCreatedAt())
+                .paidAt(order.getPaidAt())
+                .items(order.getItems().stream()
+                        .map(this::toItemDTO)
+                        .toList())
+                .build();
+    }
+
+    private OrderItemDTO toItemDTO(OrderItem item) {
+        return OrderItemDTO.builder()
+                .id(item.getId())
+                .productId(item.getProduct().getId())
+                .productName(item.getProduct().getModelName())
+                .color(item.getProduct().getColor())
+                .size(item.getSize())
+                .quantity(item.getQuantity())
+                .unitPrice(item.getUnitPrice())
+                .totalPrice(item.getTotalPrice())
                 .build();
     }
 }

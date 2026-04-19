@@ -4,7 +4,7 @@ import com.shoestore.dto.CategoryDTO;
 import com.shoestore.dto.CheckoutRequest;
 import com.shoestore.dto.CheckoutResponse;
 import com.shoestore.dto.ConfirmPaymentRequest;
-import com.shoestore.dto.OrderDTO;
+import com.shoestore.dto.StorefrontOrderDTO;
 import com.shoestore.dto.StorefrontProductDTO;
 import com.shoestore.service.OrderService;
 import com.shoestore.service.StorefrontService;
@@ -13,22 +13,26 @@ import com.stripe.model.Event;
 import com.stripe.model.PaymentIntent;
 import com.stripe.model.StripeObject;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
 /**
- * Public API consumed by the customer-facing storefront. All endpoints are
+ * Public API consumed by the customer-facing storefront. Most endpoints are
  * whitelisted in {@link com.shoestore.config.SecurityConfig} — no JWT required.
+ * The order-lookup flow is gated by a per-order HMAC token instead (C-4).
  */
 @RestController
 @RequestMapping("/api/storefront")
 @RequiredArgsConstructor
 @Slf4j
+@Validated
 public class StorefrontController {
 
     private final StorefrontService storefrontService;
@@ -45,9 +49,16 @@ public class StorefrontController {
         return ResponseEntity.ok(storefrontService.getCategories());
     }
 
+    /**
+     * Customer-facing order lookup. Requires the {@code token} query parameter
+     * that was handed back at checkout. Returns a PII-stripped view of the
+     * order (see {@link StorefrontOrderDTO}).
+     */
     @GetMapping("/orders/{orderId}")
-    public ResponseEntity<OrderDTO> getOrder(@PathVariable Long orderId) {
-        return ResponseEntity.ok(orderService.getOrderById(orderId));
+    public ResponseEntity<StorefrontOrderDTO> getOrder(
+            @PathVariable Long orderId,
+            @RequestParam("token") @NotBlank String token) {
+        return ResponseEntity.ok(orderService.getOrderForCustomer(orderId, token));
     }
 
     @PostMapping("/checkout/create-payment-intent")
@@ -58,22 +69,20 @@ public class StorefrontController {
     }
 
     @PostMapping("/checkout/confirm")
-    public ResponseEntity<OrderDTO> confirmPayment(
+    public ResponseEntity<StorefrontOrderDTO> confirmPayment(
             @Valid @RequestBody ConfirmPaymentRequest request) {
-        return ResponseEntity.ok(orderService.confirmPayment(request.getPaymentIntentId()));
+        return ResponseEntity.ok(orderService.confirmPayment(
+                request.getOrderId(),
+                request.getPaymentIntentId(),
+                request.getLookupToken()));
     }
 
-    /**
-     * Stripe → backend webhook. Kept idempotent so even if the browser also
-     * calls /checkout/confirm, we never double-apply state.
-     */
     @PostMapping("/checkout/webhook")
     public ResponseEntity<String> stripeWebhook(
             @RequestBody String payload,
             @RequestHeader(value = "Stripe-Signature", required = false) String signature) {
         Event event = stripeService.constructWebhookEvent(payload, signature);
         if (event == null) {
-            // webhook secret not configured — acknowledge so Stripe stops retrying in dev.
             return ResponseEntity.ok("webhook-disabled");
         }
 

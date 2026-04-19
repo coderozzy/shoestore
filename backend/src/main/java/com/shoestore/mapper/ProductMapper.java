@@ -31,6 +31,7 @@ public interface ProductMapper {
     @Mapping(target = "qrCodeValue", ignore = true)
     @Mapping(target = "category", ignore = true)
     @Mapping(target = "sizes", ignore = true)
+    @Mapping(target = "imageDataUrls", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)
     void updateEntity(@MappingTarget Product product, com.shoestore.dto.UpdateProductRequest request);

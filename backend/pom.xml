@@ -7,7 +7,10 @@
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
-        <version>3.2.2</version>
+        <!-- L-7: 3.2.2 ships known CVEs (CVE-2024-22243 et al.). Stay on the
+             latest patch release of the 3.2 line so we pick up security
+             backports without a minor-version migration. -->
+        <version>3.2.12</version>
         <relativePath/>
     </parent>
 
@@ -166,6 +169,13 @@
                             <version>0.2.0</version>
                         </path>
                     </annotationProcessorPaths>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <configuration>
+                    <argLine>-Dnet.bytebuddy.experimental=true</argLine>
                 </configuration>
             </plugin>
         </plugins>

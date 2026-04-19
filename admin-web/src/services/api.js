@@ -1,29 +1,25 @@
 import axios from 'axios';
 
+// Auth is now carried by an HttpOnly cookie set by the backend on login.
+// `withCredentials: true` makes axios include that cookie on every request
+// from this SPA. We no longer read a JWT from localStorage (C-7).
 const api = axios.create({
     baseURL: '/api',
+    withCredentials: true,
     headers: {
         'Content-Type': 'application/json'
     }
-});
-
-api.interceptors.request.use((config) => {
-    const token = localStorage.getItem('token');
-    if (token) {
-        config.headers.Authorization = `Bearer ${token}`;
-    }
-    return config;
 });
 
 api.interceptors.response.use(
     (response) => response,
     (error) => {
         if (error.response?.status === 401) {
-            localStorage.removeItem('token');
-            localStorage.removeItem('user');
-            // Admin SPA is served under /admin (see BrowserRouter basename). A full reload
-            // to /admin/login rebuilds in-memory React auth state from the now-empty
-            // localStorage and avoids any UI/auth desync.
+            try {
+                sessionStorage.removeItem('admin-user');
+            } catch {
+                // noop
+            }
             if (!window.location.pathname.endsWith('/login')) {
                 window.location.href = '/admin/login';
             }

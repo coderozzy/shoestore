@@ -35,12 +35,15 @@ class DiscountServiceTest {
     private ProductRepository productRepository;
     @Mock
     private ProductDiscountRepository productDiscountRepository;
+    @Mock
+    private AuditLogService auditLogService;
 
     private DiscountService discountService;
 
     @BeforeEach
     void setUp() {
-        discountService = new DiscountService(discountRepository, productRepository, productDiscountRepository);
+        discountService = new DiscountService(
+                discountRepository, productRepository, productDiscountRepository, auditLogService);
     }
 
     @Test

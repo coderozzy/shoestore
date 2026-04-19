@@ -8,6 +8,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 @Data
 @NoArgsConstructor
@@ -24,7 +25,24 @@ public class UpdateProductRequest {
     private String color;
 
     @DecimalMin(value = "0.01", message = "Price must be greater than 0")
+    @DecimalMax(value = "1000000.00", message = "Price must be no more than 1,000,000")
     private BigDecimal price;
+
+    @Size(max = 15_000_000, message = "Product image is too large")
+    @Pattern(
+            regexp = "^$|^data:image/(png|jpe?g|webp);base64,[A-Za-z0-9+/=]+$",
+            message = "Image must be a PNG/JPEG/WebP data URL"
+    )
+    private String imageDataUrl;
+
+    private List<@Size(max = 15_000_000, message = "Product image is too large")
+                 @Pattern(
+                         regexp = "^data:image/(png|jpe?g|webp);base64,[A-Za-z0-9+/=]+$",
+                         message = "Image must be a PNG/JPEG/WebP data URL"
+                 ) String> imageDataUrls;
+
+    private Boolean publishedToStore;
+    private Integer storeDisplayOrder;
 
     private Long categoryId;
 }

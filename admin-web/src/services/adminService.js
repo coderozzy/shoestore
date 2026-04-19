@@ -5,7 +5,6 @@ const formatLocalDateTime = (date) => {
 };
 
 export const adminService = {
-    // Orders
     async getOrders() {
         const response = await api.get('/admin/orders');
         return response.data;
@@ -16,7 +15,6 @@ export const adminService = {
         return response.data;
     },
 
-    // Discounts
     async getDiscounts() {
         const response = await api.get('/admin/discounts');
         return response.data;
@@ -32,7 +30,6 @@ export const adminService = {
         return response.data;
     },
 
-    // Staff Sales
     async getStaffSales(startDate, endDate) {
         const response = await api.get('/admin/staff-sales', {
             params: { startDate, endDate }
@@ -40,7 +37,6 @@ export const adminService = {
         return response.data;
     },
 
-    // Products
     async getProducts() {
         const response = await api.get('/products');
         return response.data;
@@ -77,16 +73,31 @@ export const adminService = {
         return response.data;
     },
 
+    async generateProductImage(payload) {
+        const response = await api.post('/admin/products/generate-image', payload);
+        return response.data;
+    },
+
     async getCategories() {
         const response = await api.get('/categories');
         return response.data;
     },
 
+    // Direct <img src> still works because the HttpOnly auth cookie is attached
+    // automatically for same-origin GETs. Use fetchQrImageObjectUrl below when
+    // you want to pass the image to a new window or an external printer —
+    // that cannot inherit the cookie in Safari's strict mode.
     getQrCodeImageUrl(productId) {
         return `/api/products/${productId}/qr-image`;
     },
 
-    // Analytics
+    async fetchQrImageObjectUrl(productId) {
+        const response = await api.get(`/products/${productId}/qr-image`, {
+            responseType: 'blob'
+        });
+        return URL.createObjectURL(response.data);
+    },
+
     async getSalesStats(startDate, endDate) {
         const response = await api.get('/analytics/sales', {
             params: {
@@ -108,7 +119,6 @@ export const adminService = {
         return response.data;
     },
 
-    // Stock Movements
     async getRecentStockMovements(days = 7) {
         const response = await api.get('/stock-movements/recent', {
             params: { days }
@@ -116,7 +126,6 @@ export const adminService = {
         return response.data;
     },
 
-    // Staff Management
     async getStaffList() {
         const response = await api.get('/admin/staff');
         return response.data;

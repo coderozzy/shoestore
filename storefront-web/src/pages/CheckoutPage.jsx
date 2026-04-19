@@ -216,11 +216,12 @@ function StripePaymentForm({ session }) {
             return;
         }
 
-        // Tell backend to flip the order to PAID (webhook may also do this).
         try {
-            await storefrontService.confirmPayment(
-                paymentIntent?.id || session.paymentIntentId
-            );
+            await storefrontService.confirmPayment({
+                orderId: session.orderId,
+                paymentIntentId: paymentIntent?.id || session.paymentIntentId,
+                lookupToken: session.lookupToken
+            });
         } catch (err) {
             console.error('Confirm call failed', err);
         }

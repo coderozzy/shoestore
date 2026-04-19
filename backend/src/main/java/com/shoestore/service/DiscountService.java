@@ -22,6 +22,7 @@ public class DiscountService {
     private final DiscountRepository discountRepository;
     private final ProductRepository productRepository;
     private final ProductDiscountRepository productDiscountRepository;
+    private final AuditLogService auditLogService;
 
     @Transactional(readOnly = true)
     public List<DiscountDTO> getAllDiscounts() {
@@ -45,6 +46,8 @@ public class DiscountService {
                 .active(true)
                 .build();
         Discount savedDiscount = discountRepository.save(discount);
+        auditLogService.record("DISCOUNT_CREATE", "Discount", savedDiscount.getId(),
+                null, savedDiscount.getName() + "=" + savedDiscount.getValue());
 
         List<Long> productIds = request.getProductIds() == null ? List.of() : request.getProductIds();
         for (Long productId : productIds) {
@@ -71,8 +74,16 @@ public class DiscountService {
     public DiscountDTO toggleDiscount(Long id, boolean active) {
         Discount discount = discountRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Discount", "id", id));
+        boolean previous = Boolean.TRUE.equals(discount.getActive());
         discount.setActive(active);
-        return toDTO(discountRepository.save(discount));
+        DiscountDTO dto = toDTO(discountRepository.save(discount));
+        auditLogService.record(
+                active ? "DISCOUNT_ENABLE" : "DISCOUNT_DISABLE",
+                "Discount",
+                id,
+                String.valueOf(previous),
+                String.valueOf(active));
+        return dto;
     }
 
     private DiscountDTO toDTO(Discount discount) {

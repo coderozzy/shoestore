@@ -5,6 +5,7 @@ import com.shoestore.dto.StaffDTO;
 import com.shoestore.entity.User;
 import com.shoestore.enums.Role;
 import com.shoestore.repository.UserRepository;
+import com.shoestore.service.AuditLogService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -24,10 +25,9 @@ import java.util.List;
 @Slf4j
 public class StaffController {
 
-    private static final String DEFAULT_STAFF_PASSWORD = "staff123";
-
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final AuditLogService auditLogService;
 
     @GetMapping
     public ResponseEntity<List<StaffDTO>> listStaff() {
@@ -40,20 +40,23 @@ public class StaffController {
 
     @PostMapping
     public ResponseEntity<StaffDTO> createStaff(@Valid @RequestBody CreateStaffRequest request) {
-        if (userRepository.existsByUsername(request.getUsername())) {
+        String username = request.getUsername().trim().toLowerCase();
+        if (userRepository.existsByUsername(username)) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Username already exists");
         }
 
         User user = User.builder()
-                .username(request.getUsername().trim().toLowerCase())
-                .password(passwordEncoder.encode(DEFAULT_STAFF_PASSWORD))
+                .username(username)
+                .password(passwordEncoder.encode(request.getPassword()))
                 .email(request.getEmail())
                 .role(Role.STAFF)
                 .enabled(true)
+                .tokenVersion(0L)
                 .build();
 
         User saved = userRepository.save(user);
         log.info("Admin created new staff user: {}", saved.getUsername());
+        auditLogService.record("STAFF_CREATE", "User", saved.getId(), null, saved.getUsername());
         return ResponseEntity.status(HttpStatus.CREATED).body(toDTO(saved));
     }
 
@@ -68,9 +71,21 @@ public class StaffController {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Cannot toggle non-staff user");
         }
 
+        boolean wasEnabled = Boolean.TRUE.equals(user.getEnabled());
         user.setEnabled(enabled);
+        // When disabling we also bump token_version so every outstanding JWT
+        // for this user is invalidated immediately (H-3).
+        if (wasEnabled && !enabled) {
+            user.setTokenVersion((user.getTokenVersion() == null ? 0L : user.getTokenVersion()) + 1);
+        }
         User saved = userRepository.save(user);
         log.info("Staff user {} {}", saved.getUsername(), enabled ? "enabled" : "disabled");
+        auditLogService.record(
+                enabled ? "STAFF_ENABLE" : "STAFF_DISABLE",
+                "User",
+                saved.getId(),
+                String.valueOf(wasEnabled),
+                String.valueOf(enabled));
         return ResponseEntity.ok(toDTO(saved));
     }
 

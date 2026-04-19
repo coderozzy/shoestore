@@ -4,6 +4,7 @@ import { useAuth } from './context/AuthContext.jsx';
 import PrivateRoute from './components/PrivateRoute.jsx';
 import adminService from './services/adminService.js';
 import ProductsPage from './pages/ProductsPage.jsx';
+import StaffPage from './pages/StaffPage.jsx';
 import {
     BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
     ResponsiveContainer, Cell, LineChart, Line
@@ -665,6 +666,7 @@ function AdminShell() {
                 <NavLink to="/orders">📦 Online Orders</NavLink>
                 <NavLink to="/discounts">🏷️ Discounts</NavLink>
                 <NavLink to="/staff-sales">👥 Staff Sales</NavLink>
+                <NavLink to="/staff">🧑‍💼 Staff</NavLink>
                 <div className="nav-spacer" />
                 <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>{user?.username}</span>
                 <button className="btn btn-secondary btn-sm" onClick={() => { logout(); navigate('/login'); }}>
@@ -677,6 +679,7 @@ function AdminShell() {
                 <Route path="/orders" element={<OrdersPage />} />
                 <Route path="/discounts" element={<DiscountsPage />} />
                 <Route path="/staff-sales" element={<StaffSalesPage />} />
+                <Route path="/staff" element={<StaffPage />} />
             </Routes>
         </div>
     );

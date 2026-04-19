@@ -10,6 +10,7 @@ export default function CartPage() {
     if (items.length === 0) {
         return (
             <div className="cart-empty">
+                <span style={{ fontSize: '3rem', display: 'block', marginBottom: '0.75rem' }}>🛒</span>
                 <h1>Your cart is empty</h1>
                 <p>Add a pair of sneakers to get started.</p>
                 <Link to="/" className="store-button">Browse products</Link>
@@ -19,14 +20,18 @@ export default function CartPage() {
 
     return (
         <div className="cart-page">
-            <h1>Your cart</h1>
+            <h1>Your cart <span style={{ color: 'var(--text-light)', fontWeight: 400, fontSize: '1rem' }}>({items.length} item{items.length !== 1 ? 's' : ''})</span></h1>
 
             <ul className="cart-list">
-                {items.map((item) => (
-                    <li key={`${item.productId}-${item.size}`} className="cart-row">
+                {items.map((item, i) => (
+                    <li
+                        key={`${item.productId}-${item.size}`}
+                        className="cart-row"
+                        style={{ animationDelay: `${i * 0.06}s` }}
+                    >
                         <div className="cart-row-info">
                             <h3>{item.modelName}</h3>
-                            <p>{item.color} · Size {item.size}</p>
+                            <p>{item.color} &middot; Size {item.size}</p>
                             <p className="cart-row-unit">{formatPrice(item.unitPrice)} each</p>
                         </div>
                         <div className="cart-row-qty">
@@ -35,8 +40,10 @@ export default function CartPage() {
                                 className="qty-btn"
                                 onClick={() => setQuantity(item.productId, item.size, item.quantity - 1)}
                                 aria-label="Decrease"
-                            >−</button>
-                            <span>{item.quantity}</span>
+                            >&minus;</button>
+                            <span style={{ minWidth: 24, textAlign: 'center', fontWeight: 700 }}>
+                                {item.quantity}
+                            </span>
                             <button
                                 type="button"
                                 className="qty-btn"

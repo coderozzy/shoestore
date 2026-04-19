@@ -20,6 +20,8 @@ public class StorefrontProductDTO {
     private String color;
     private BigDecimal originalPrice;
     private BigDecimal effectivePrice;
+    private String imageDataUrl;
+    private List<String> imageDataUrls;
     private boolean discounted;
     private String discountName;
     private List<ProductSizeDTO> sizes;

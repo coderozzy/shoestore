@@ -26,6 +26,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -87,8 +88,16 @@ public class ProductService {
                 .gender(request.getGender())
                 .color(request.getColor())
                 .price(request.getPrice())
+                .publishedToStore(Boolean.TRUE.equals(request.getPublishedToStore()))
+                .storeDisplayOrder(request.getStoreDisplayOrder())
                 .qrCodeValue(qrCodeValue)
                 .build();
+
+        applyImageSelection(product, request.getImageDataUrls(), request.getImageDataUrl());
+
+        if (product.isPublishedToStore() && product.getStoreDisplayOrder() == null) {
+            product.setStoreDisplayOrder(nextStoreDisplayOrder());
+        }
         
         // Set category
         if (request.getCategoryId() != null) {
@@ -138,6 +147,20 @@ public class ProductService {
                 .orElseThrow(() -> new ResourceNotFoundException("Product", "id", id));
         
         productMapper.updateEntity(product, request);
+        if (request.getImageDataUrls() != null || request.getImageDataUrl() != null) {
+            applyImageSelection(product, request.getImageDataUrls(), request.getImageDataUrl());
+        }
+
+        if (request.getPublishedToStore() != null) {
+            product.setPublishedToStore(request.getPublishedToStore());
+            if (request.getPublishedToStore() && product.getStoreDisplayOrder() == null) {
+                product.setStoreDisplayOrder(nextStoreDisplayOrder());
+            }
+        }
+
+        if (request.getStoreDisplayOrder() != null) {
+            product.setStoreDisplayOrder(request.getStoreDisplayOrder());
+        }
         
         if (request.getCategoryId() != null) {
             Category category = categoryRepository.findById(request.getCategoryId())
@@ -367,5 +390,28 @@ public class ProductService {
     /** Expose DTO mapping so callers that already have a {@link Product} don't need a second query. */
     public ProductDTO toDTO(Product product) {
         return productMapper.toDTO(product);
+    }
+
+    private int nextStoreDisplayOrder() {
+        Integer currentMax = productRepository.findMaxStoreDisplayOrder();
+        return (currentMax == null ? 0 : currentMax) + 1;
+    }
+
+    private void applyImageSelection(Product product, List<String> imageDataUrls, String fallbackImageDataUrl) {
+        List<String> normalized = new ArrayList<>();
+        if (imageDataUrls != null) {
+            for (String image : imageDataUrls) {
+                if (image != null && !image.isBlank() && !normalized.contains(image)) {
+                    normalized.add(image);
+                }
+            }
+        }
+        if (normalized.isEmpty() && fallbackImageDataUrl != null && !fallbackImageDataUrl.isBlank()) {
+            normalized.add(fallbackImageDataUrl);
+        }
+
+        product.getImageDataUrls().clear();
+        product.getImageDataUrls().addAll(normalized);
+        product.setImageDataUrl(normalized.isEmpty() ? null : normalized.get(0));
     }
 }

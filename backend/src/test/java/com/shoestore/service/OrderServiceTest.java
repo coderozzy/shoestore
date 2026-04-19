@@ -2,6 +2,7 @@ package com.shoestore.service;
 
 import com.shoestore.dto.CheckoutRequest;
 import com.shoestore.dto.CheckoutResponse;
+import com.shoestore.dto.StorefrontOrderDTO;
 import com.shoestore.entity.CustomerOrder;
 import com.shoestore.entity.Product;
 import com.shoestore.entity.ProductSize;
@@ -13,6 +14,7 @@ import com.shoestore.repository.CustomerOrderRepository;
 import com.shoestore.repository.ProductDiscountRepository;
 import com.shoestore.repository.ProductRepository;
 import com.shoestore.repository.ProductSizeRepository;
+import com.shoestore.security.OrderLookupTokenService;
 import com.stripe.model.PaymentIntent;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -46,6 +48,10 @@ class OrderServiceTest {
     private ProductDiscountRepository productDiscountRepository;
     @Mock
     private StripeService stripeService;
+    @Mock
+    private OrderLookupTokenService orderLookupTokenService;
+    @Mock
+    private AuditLogService auditLogService;
 
     private OrderService orderService;
     private TestStockMovementService stockMovementService;
@@ -60,7 +66,9 @@ class OrderServiceTest {
                 productSizeRepository,
                 pricingService,
                 stockMovementService,
-                stripeService
+                stripeService,
+                orderLookupTokenService,
+                auditLogService
         );
     }
 
@@ -100,12 +108,14 @@ class OrderServiceTest {
         pi.setCurrency("try");
         when(stripeService.createPaymentIntent(anyLong(), any(BigDecimal.class), anyString()))
                 .thenReturn(pi);
+        when(orderLookupTokenService.issue(anyLong(), anyString())).thenReturn("token-abc");
 
         CheckoutResponse response = orderService.initiateCheckout(request);
 
         assertThat(response.getOrderId()).isEqualTo(50L);
         assertThat(response.getClientSecret()).isEqualTo("pi_test_123_secret_abc");
         assertThat(response.getAmount()).isEqualByComparingTo("500");
+        assertThat(response.getLookupToken()).isEqualTo("token-abc");
         assertThat(productSize.getStockQuantity()).isEqualTo(3);
         assertThat(stockMovementService.recorded).hasSize(1);
         assertThat(stockMovementService.recorded.get(0)).isEqualTo("Street:42:2:SALE");
@@ -131,7 +141,7 @@ class OrderServiceTest {
     }
 
     @Test
-    void shouldMarkOrderPaidOnStripeSucceeded() {
+    void shouldMarkOrderPaidOnStripeSucceededWhenTokenValid() {
         CustomerOrder order = CustomerOrder.builder()
                 .id(77L)
                 .stripePaymentIntentId("pi_ok")
@@ -140,8 +150,7 @@ class OrderServiceTest {
                 .items(new ArrayList<>())
                 .build();
 
-        when(customerOrderRepository.findByStripePaymentIntentId("pi_ok"))
-                .thenReturn(Optional.of(order));
+        when(customerOrderRepository.findById(77L)).thenReturn(Optional.of(order));
 
         PaymentIntent pi = new PaymentIntent();
         pi.setId("pi_ok");
@@ -149,10 +158,42 @@ class OrderServiceTest {
         when(stripeService.retrievePaymentIntent("pi_ok")).thenReturn(pi);
         when(customerOrderRepository.save(any(CustomerOrder.class))).thenAnswer(inv -> inv.getArgument(0));
 
-        orderService.confirmPayment("pi_ok");
+        StorefrontOrderDTO dto = orderService.confirmPayment(77L, "pi_ok", "token-abc");
 
         assertThat(order.getStatus()).isEqualTo(OrderStatus.PAID);
         assertThat(order.getPaidAt()).isNotNull();
+        assertThat(dto.getStatus()).isEqualTo(OrderStatus.PAID);
+    }
+
+    @Test
+    void shouldRejectConfirmWhenPaymentIntentMismatches() {
+        CustomerOrder order = CustomerOrder.builder()
+                .id(77L)
+                .stripePaymentIntentId("pi_ok")
+                .status(OrderStatus.PENDING)
+                .items(new ArrayList<>())
+                .totalAmount(BigDecimal.ZERO)
+                .build();
+        when(customerOrderRepository.findById(77L)).thenReturn(Optional.of(order));
+
+        assertThatThrownBy(() -> orderService.confirmPayment(77L, "pi_other", "token-abc"))
+                .isInstanceOf(BadRequestException.class)
+                .hasMessageContaining("Payment intent");
+    }
+
+    @Test
+    void shouldRejectIllegalStatusTransition() {
+        CustomerOrder order = CustomerOrder.builder()
+                .id(5L)
+                .status(OrderStatus.CANCELLED)
+                .items(new ArrayList<>())
+                .totalAmount(BigDecimal.ZERO)
+                .build();
+        when(customerOrderRepository.findById(5L)).thenReturn(Optional.of(order));
+
+        assertThatThrownBy(() -> orderService.updateStatus(5L, OrderStatus.PAID))
+                .isInstanceOf(BadRequestException.class)
+                .hasMessageContaining("Illegal order status transition");
     }
 
     private CheckoutRequest baseRequest(int quantity) {

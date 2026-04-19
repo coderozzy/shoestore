@@ -31,7 +31,6 @@ export const productService = {
     },
 
     async addSize(id, sizeData) {
-        // Backend expects size + stockQuantity as query params (see ProductController.addSize).
         const response = await api.post(
             `/products/${id}/sizes?size=${sizeData.size}&stockQuantity=${sizeData.stockQuantity}`
         );
@@ -69,12 +68,8 @@ export const productService = {
             ? `/products/generate-qr?content=${encodeURIComponent(content)}`
             : '/products/generate-qr';
 
-        const response = await api.get(url, {
-            responseType: 'blob'
-        });
+        const response = await api.get(url, { responseType: 'blob' });
 
-        // Robust header extraction
-        // Fix for [object Object]: Prioritize .get() for AxiosHeaders
         let qrCodeValue;
         if (response.headers && typeof response.headers.get === 'function') {
             qrCodeValue = response.headers.get('x-qr-code-value');
@@ -82,7 +77,6 @@ export const productService = {
             qrCodeValue = response.headers['x-qr-code-value'];
         }
 
-        // Force string primitive and handle broken objects
         qrCodeValue = String(qrCodeValue || '');
 
         return new Promise((resolve, reject) => {
@@ -95,9 +89,16 @@ export const productService = {
         });
     },
 
-    getQrCodeImageUrl(id) {
-        const token = localStorage.getItem('token');
-        return `${api.defaults.baseURL}/products/${id}/qr-image?token=${token}`;
+    /**
+     * H-1: fetch the QR image as an authenticated blob instead of embedding
+     * the JWT in the <img src> URL. Returns an object URL the caller can
+     * drop into <img src=""> — caller MUST revoke() it on unmount.
+     */
+    async fetchQrImageObjectUrl(id) {
+        const response = await api.get(`/products/${id}/qr-image`, {
+            responseType: 'blob'
+        });
+        return URL.createObjectURL(response.data);
     }
 };
 
