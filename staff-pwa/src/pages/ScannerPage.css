@@ -1,8 +1,14 @@
+/* ==========================================================================
+   Scanner page — viewfinder + product action panel
+   ========================================================================== */
+
 .scanner-page {
     flex: 1;
     display: flex;
     flex-direction: column;
-    padding: var(--spacing-lg);
+    background: var(--bg-primary);
+    min-height: 0;
+    padding-bottom: 1.25rem;
 }
 
 .scanner-loading {
@@ -12,358 +18,331 @@
     justify-content: center;
 }
 
+/* ---- Result card ---- */
 .scanner-result {
-    max-width: 500px;
-    margin: 0 auto;
-    width: 100%;
+    margin: 0.75rem;
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.85rem;
+}
+
+.scanner-result.error-result {
+    border-left: 4px solid var(--accent-danger);
+}
+
+.scanner-result.success-result {
+    border-left: 4px solid var(--accent-success);
+}
+
+.scanner-result h3 {
+    font-family: var(--fd);
+    font-size: 1.3rem;
+    font-weight: 400;
+    color: var(--text-primary);
+    margin: 0;
+}
+
+.scanner-result > p {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    margin: 0;
 }
 
 .result-header {
-    text-align: center;
-    margin-bottom: var(--spacing-lg);
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
 }
 
 .result-icon {
-    font-size: 3rem;
-    margin-bottom: var(--spacing-sm);
+    font-size: 1.4rem;
+    line-height: 1;
 }
 
-.result-header h3 {
-    font-size: 1.5rem;
-    color: var(--accent-success);
+.create-product-action {
+    background: var(--surface-alt);
+    border-radius: var(--radius-md);
+    padding: 0.85rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.55rem;
 }
 
-.error-result {
-    text-align: center;
-    padding: var(--spacing-xl);
-}
-
-.error-result h3 {
-    color: var(--accent-danger);
-    margin-bottom: var(--spacing-sm);
-}
-
-.error-result p {
+.create-hint {
+    font-size: 0.82rem;
     color: var(--text-secondary);
-    margin-bottom: var(--spacing-lg);
+    margin: 0;
 }
 
 .result-actions {
     display: flex;
-    gap: var(--spacing-md);
-    margin-top: var(--spacing-lg);
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    margin-top: 0.25rem;
 }
 
-.result-actions .btn {
-    flex: 1;
-    padding: var(--spacing-md);
-}
+.result-actions .btn { flex: 1; min-width: 120px; }
 
-/* Sell Success Popup */
-.sell-success-popup {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(0, 0, 0, 0.7);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 1000;
-    animation: fadeIn 0.3s ease;
-}
-
-.success-content {
-    background: linear-gradient(135deg, #1a1a2e, #16213e);
-    border: 2px solid var(--accent-success);
-    border-radius: var(--radius-lg);
-    padding: var(--spacing-xl);
-    text-align: center;
-    animation: scaleIn 0.3s ease;
-    box-shadow: 0 0 30px rgba(16, 185, 129, 0.3);
-}
-
-.success-icon {
-    font-size: 4rem;
-    margin-bottom: var(--spacing-md);
-}
-
-.success-content h3 {
-    font-size: 1.5rem;
-    color: var(--accent-success);
-    margin-bottom: var(--spacing-sm);
-}
-
-.success-content p {
-    color: var(--text-primary);
-    font-size: 1.1rem;
-}
-
-.success-content .stock-info {
-    color: var(--text-secondary);
-    font-size: 0.9rem;
-    margin-top: var(--spacing-sm);
-}
-
-@keyframes scaleIn {
-    from {
-        transform: scale(0.8);
-        opacity: 0;
-    }
-
-    to {
-        transform: scale(1);
-        opacity: 1;
-    }
-}
-
-.create-product-action {
-    background: var(--bg-secondary);
-    padding: 1rem;
-    border-radius: var(--radius-md);
-    margin: 1rem 0;
-    text-align: center;
-    border: 1px solid var(--border-primary);
-}
-
-.create-hint {
-    color: var(--text-secondary);
-    margin-bottom: 0.5rem !important;
-    font-size: 0.9rem;
-}
-
-.create-product-action .btn {
-    width: 100%;
-}
-
-/* Mode Tabs */
+/* ---- Mode tab pill (Sell / Return / Stock) ---- */
 .mode-tabs {
     display: flex;
-    background: #f1f3f5;
-    padding: 4px;
-    border-radius: 12px;
-    margin-top: 1rem;
-    gap: 4px;
+    background: var(--surface-alt);
+    border-radius: var(--radius-md);
+    padding: 3px;
+    gap: 3px;
 }
 
 .tab-btn {
     flex: 1;
-    border: none;
     background: transparent;
-    padding: 10px;
-    font-weight: 600;
-    color: #666;
-    border-radius: 8px;
+    border: none;
+    padding: 0.55rem 0.5rem;
+    border-radius: var(--radius-sm);
+    color: var(--text-secondary);
+    font-size: 0.82rem;
+    font-weight: 500;
     cursor: pointer;
-    transition: all 0.2s;
-    font-size: 0.95rem;
+    font-family: inherit;
+    transition: background var(--transition-fast), color var(--transition-fast);
+    letter-spacing: 0.02em;
 }
+
+.tab-btn:hover { color: var(--text-primary); }
 
 .tab-btn.active {
-    background: white;
-    color: #1a1a1a;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    background: var(--accent-primary);
+    color: var(--accent-fg);
 }
 
-/* Sales Section */
+/* ---- Sales / return / stock sections ---- */
 .sales-section,
 .stock-section {
-    margin-top: 1rem;
-    background: white;
-    padding: 1.5rem;
-    border-radius: 16px;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
-    animation: fadeIn 0.3s ease-out;
+    background: var(--surface-alt);
+    border-radius: var(--radius-md);
+    padding: 0.95rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.7rem;
 }
 
 .sales-section h4,
 .stock-section h4 {
-    margin: 0 0 1rem 0;
-    color: #333;
+    font-family: var(--fd);
     font-size: 1.1rem;
-    border-bottom: 1px solid #eee;
-    padding-bottom: 0.5rem;
+    font-weight: 400;
+    color: var(--text-primary);
+    margin: 0;
 }
 
 .sales-controls {
     display: flex;
     flex-direction: column;
-    gap: 1rem;
+    gap: 0.7rem;
 }
 
-.size-selector label {
+/* Size grid */
+.size-selector label,
+.quantity-row label {
     display: block;
-    margin-bottom: 0.5rem;
-    font-size: 0.9rem;
-    color: #666;
-    font-weight: 500;
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-secondary);
+    margin-bottom: 0.35rem;
 }
 
 .size-options {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(60px, 1fr));
-    gap: 8px;
-    margin-bottom: 1rem;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
 }
 
 .size-option-btn {
-    background: #f8f9fa;
-    border: 1px solid #e9ecef;
-    border-radius: 8px;
-    padding: 8px 4px;
+    width: 48px;
+    height: 44px;
+    border-radius: var(--radius-md);
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    color: var(--text-primary);
+    font-size: 0.88rem;
+    font-weight: 500;
     cursor: pointer;
-    transition: all 0.2s;
-    font-weight: 600;
-    color: #495057;
+    font-family: inherit;
     position: relative;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
+    transition: background var(--transition-fast), border-color var(--transition-fast), color var(--transition-fast);
 }
 
-.size-option-btn:hover:not(:disabled) {
-    border-color: #667eea;
-    background: #eef2ff;
+.size-option-btn:hover:not(.disabled) {
+    border-color: var(--text-primary);
 }
 
 .size-option-btn.selected {
-    background: #667eea;
-    color: white;
-    border-color: #667eea;
-    transform: translateY(-2px);
-    box-shadow: 0 4px 6px rgba(102, 126, 234, 0.25);
+    background: var(--accent-primary);
+    border-color: var(--accent-primary);
+    color: var(--accent-fg);
 }
 
 .size-option-btn.disabled {
-    opacity: 0.5;
+    opacity: 0.4;
     cursor: not-allowed;
-    background: #eee;
+    text-decoration: line-through;
 }
 
 .stock-tiny {
-    font-size: 0.7rem;
-    font-weight: 400;
-    margin-top: 2px;
-    opacity: 0.8;
+    position: absolute;
+    bottom: 2px;
+    right: 4px;
+    font-size: 0.55rem;
+    font-weight: 500;
+    color: var(--text-muted);
+    line-height: 1;
 }
+
+.size-option-btn.selected .stock-tiny {
+    color: rgba(255, 255, 255, 0.7);
+}
+
+/* Quantity row */
+.quantity-row {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+}
+
+.quantity-row .input { max-width: 160px; }
 
 .sell-btn {
     width: 100%;
-    padding: 1rem;
-    font-size: 1.1rem;
-    font-weight: 600;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-}
-
-.sell-btn:disabled {
-    background-color: #a0aec0;
-    cursor: not-allowed;
-    transform: none;
+    padding: 0.85rem;
+    margin-top: 0.25rem;
+    font-size: 0.95rem;
 }
 
 .no-stock-msg {
     text-align: center;
-    padding: 1rem;
-    background: #f8f9fa;
-    border-radius: 8px;
-    color: #666;
+    color: var(--text-secondary);
+    font-size: 0.88rem;
+    padding: 0.5rem 0;
 }
 
-.no-stock-msg .btn-link {
-    color: #667eea;
-    background: none;
-    border: none;
-    text-decoration: underline;
-    cursor: pointer;
-    padding: 0;
-    margin-top: 5px;
-}
-
-/* STOCK SECTION STYLES */
+/* Stock management list */
 .existing-sizes-list {
     display: flex;
     flex-direction: column;
-    gap: 12px;
-    margin-bottom: 1.5rem;
+    gap: 0.45rem;
 }
 
 .stock-item {
     display: flex;
-    justify-content: space-between;
     align-items: center;
-    background: #f8f9fa;
-    padding: 10px;
-    border-radius: 8px;
-    border: 1px solid #e9ecef;
+    justify-content: space-between;
+    gap: 0.75rem;
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    padding: 0.5rem 0.75rem;
 }
 
 .stock-info-col {
     display: flex;
     flex-direction: column;
+    gap: 0.1rem;
 }
 
 .size-label {
-    font-weight: 700;
-    font-size: 1.05rem;
-    color: #333;
+    font-size: 0.92rem;
+    font-weight: 500;
+    color: var(--text-primary);
 }
 
 .current-stock {
-    font-size: 0.8rem;
-    color: #666;
+    font-size: 0.72rem;
+    color: var(--text-muted);
 }
 
 .stock-action-col {
     display: flex;
-    gap: 8px;
     align-items: center;
+    gap: 0.4rem;
 }
 
 .stock-input {
-    width: 60px;
-    padding: 6px;
-    border: 1px solid #ced4da;
-    border-radius: 6px;
-    text-align: center;
-}
-
-.btn-sm {
-    padding: 6px 12px;
-    font-size: 0.85rem;
+    width: 68px;
+    padding: 0.4rem 0.5rem !important;
+    font-size: 0.85rem !important;
 }
 
 .add-new-size-form {
-    border-top: 1px dashed #ced4da;
-    padding-top: 1rem;
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    padding: 0.85rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+    margin-top: 0.6rem;
 }
 
 .add-new-size-form h5 {
-    margin: 0 0 10px 0;
-    font-size: 0.95rem;
-    color: #555;
-    font-weight: 600;
+    font-family: var(--fd);
+    font-size: 1rem;
+    font-weight: 400;
+    color: var(--text-primary);
+    margin: 0;
 }
 
 .new-size-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.55rem;
+}
+
+/* ---- Success popup overlay ---- */
+.sell-success-popup {
+    position: fixed;
+    inset: 0;
+    background: rgba(28, 21, 16, 0.45);
+    backdrop-filter: blur(4px);
     display: flex;
-    gap: 10px;
-    margin-bottom: 10px;
+    align-items: center;
+    justify-content: center;
+    z-index: 200;
+    animation: fadeIn 0.2s ease forwards;
+    padding: 1.5rem;
 }
 
-.new-size-row .input {
-    flex: 1;
+.success-content {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    padding: 1.75rem 1.5rem 1.5rem;
+    max-width: 320px;
+    width: 100%;
+    text-align: center;
+    box-shadow: 0 16px 48px rgba(28, 21, 16, 0.12);
 }
 
-.btn-outline {
-    background: transparent;
-    border: 1px solid #ced4da;
-    color: #495057;
+.success-icon {
+    font-size: 2.4rem;
+    line-height: 1;
+    margin-bottom: 0.5rem;
 }
 
-.btn-outline:hover {
-    background: #e9ecef;
+.success-content h3 {
+    font-family: var(--fd);
+    font-size: 1.4rem;
+    font-weight: 400;
+    color: var(--accent-success);
+    margin-bottom: 0.4rem;
+}
+
+.success-content p {
+    color: var(--text-secondary);
+    font-size: 0.88rem;
+    margin: 0;
 }

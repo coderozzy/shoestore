@@ -1,89 +1,90 @@
+/* ==========================================================================
+   Login screen — Steps Staff PWA
+   Centered card on warm cream backdrop. Mirrors the storefront login feel
+   but slimmer (mobile-first).
+   ========================================================================== */
+
 .login-page {
     min-height: 100vh;
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: var(--spacing-lg);
+    background: var(--bg-primary);
+    padding: 1.5rem 1rem;
 }
 
 .login-container {
-    width: 100%;
-    max-width: 400px;
+    width: min(400px, 100%);
     background: var(--bg-card);
+    border: 1px solid var(--border-color);
     border-radius: var(--radius-lg);
-    padding: var(--spacing-xl);
-    box-shadow: 0 8px 40px var(--shadow-color);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    padding: 2.25rem 1.75rem 2rem;
+    box-shadow: 0 8px 32px rgba(28, 21, 16, 0.07);
 }
 
 .login-header {
-    text-align: center;
-    margin-bottom: var(--spacing-xl);
+    margin-bottom: 1.75rem;
 }
 
-.login-icon {
-    font-size: 3rem;
-    display: block;
-    margin-bottom: var(--spacing-md);
-}
-
-.login-header h1 {
-    font-size: 2rem;
-    background: linear-gradient(135deg, var(--accent-primary), #ff6b81);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-    margin-bottom: var(--spacing-xs);
+.login-brand {
+    font-family: var(--fd);
+    font-size: 2.25rem;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-primary);
+    margin-bottom: 0.3rem;
+    line-height: 1;
 }
 
 .login-header p {
     color: var(--text-secondary);
+    font-size: 0.85rem;
+    line-height: 1.5;
+    margin: 0;
 }
 
 .login-form {
     display: flex;
     flex-direction: column;
-    gap: var(--spacing-md);
-}
-
-.form-group {
-    display: flex;
-    flex-direction: column;
+    gap: 0.85rem;
 }
 
 .btn-login {
-    margin-top: var(--spacing-md);
-    padding: var(--spacing-md);
-    font-size: 1rem;
-}
-
-.btn-login .spinner {
-    margin-right: var(--spacing-sm);
+    width: 100%;
+    padding: 0.85rem;
+    margin-top: 0.5rem;
+    font-size: 0.95rem;
 }
 
 .login-footer {
-    margin-top: var(--spacing-xl);
-    padding-top: var(--spacing-lg);
-    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    margin-top: 1.5rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border-color);
     text-align: center;
 }
 
-.login-footer p {
+.login-footer > p {
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
     color: var(--text-muted);
-    font-size: 0.75rem;
-    margin-bottom: var(--spacing-sm);
+    margin-bottom: 0.5rem;
 }
 
 .demo-creds {
     display: flex;
     flex-direction: column;
-    gap: var(--spacing-xs);
+    align-items: center;
+    gap: 0.3rem;
 }
 
 .demo-creds code {
-    background: var(--bg-secondary);
-    padding: var(--spacing-xs) var(--spacing-sm);
-    border-radius: var(--radius-sm);
-    font-size: 0.75rem;
+    font-family: 'SF Mono', Menlo, monospace;
+    font-size: 0.78rem;
     color: var(--text-secondary);
+    background: var(--surface-alt);
+    padding: 0.18rem 0.5rem;
+    border-radius: var(--radius-sm);
 }

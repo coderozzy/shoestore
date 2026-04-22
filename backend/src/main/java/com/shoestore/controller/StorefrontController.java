@@ -50,15 +50,32 @@ public class StorefrontController {
     }
 
     /**
-     * Customer-facing order lookup. Requires the {@code token} query parameter
-     * that was handed back at checkout. Returns a PII-stripped view of the
-     * order (see {@link StorefrontOrderDTO}).
+     * Customer-facing order lookup by numeric id. Kept for back-compat with
+     * the order-confirmation page, which receives an {@code orderId} from
+     * the create-payment-intent response and passes it on its return-from-
+     * Stripe round-trip. Customers entering "Track order" should hit
+     * {@link #getOrderByNumber(String, String)} instead — the order number
+     * is opaque and unenumerable, the numeric id is not.
      */
     @GetMapping("/orders/{orderId}")
     public ResponseEntity<StorefrontOrderDTO> getOrder(
             @PathVariable Long orderId,
             @RequestParam("token") @NotBlank String token) {
         return ResponseEntity.ok(orderService.getOrderForCustomer(orderId, token));
+    }
+
+    /**
+     * Customer-facing order lookup by the public, opaque order number
+     * ("STP-XXXXXXXX"). Same token check as the by-id variant; the
+     * different path lets the storefront's Track Order form ask only for
+     * the human-friendly identifier.
+     */
+    @GetMapping("/orders/by-number/{orderNumber}")
+    public ResponseEntity<StorefrontOrderDTO> getOrderByNumber(
+            @PathVariable String orderNumber,
+            @RequestParam("token") @NotBlank String token) {
+        return ResponseEntity.ok(
+                orderService.getOrderForCustomerByNumber(orderNumber, token));
     }
 
     @PostMapping("/checkout/create-payment-intent")

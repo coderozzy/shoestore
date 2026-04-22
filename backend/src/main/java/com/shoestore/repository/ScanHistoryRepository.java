@@ -2,24 +2,17 @@ package com.shoestore.repository;
 
 import com.shoestore.entity.ScanHistory;
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
-import java.time.LocalDateTime;
-import java.util.List;
-
+/**
+ * Active surface is intentionally minimal: insertions via the inherited
+ * {@code save(...)}, plus a bulk delete used when an admin removes a
+ * product so the FK doesn't block the cascade. Read-side query methods
+ * lived here once but had no HTTP endpoint or service caller, so they
+ * were removed during the dead-code sweep.
+ */
 @Repository
 public interface ScanHistoryRepository extends JpaRepository<ScanHistory, Long> {
 
-    List<ScanHistory> findByProductIdOrderByScannedAtDesc(Long productId);
-
     void deleteByProductId(Long productId);
-
-    List<ScanHistory> findByUserIdOrderByScannedAtDesc(Long userId);
-
-    @Query("SELECT sh FROM ScanHistory sh WHERE sh.scannedAt >= :startDate ORDER BY sh.scannedAt DESC")
-    List<ScanHistory> findRecentScans(@Param("startDate") LocalDateTime startDate);
-
-    long countByProductId(Long productId);
 }

@@ -81,16 +81,6 @@ public class StockMovementService {
         return stockMovementMapper.toDTOList(stockMovementRepository.findRecentMovements(startDate));
     }
 
-    public List<StockMovementDTO> getMovementsByProduct(Long productId) {
-        return stockMovementMapper.toDTOList(
-                stockMovementRepository.findByProductIdOrderByOccurredAtDesc(productId));
-    }
-
-    public List<StockMovementDTO> getMovementsBetween(LocalDateTime startDate, LocalDateTime endDate) {
-        return stockMovementMapper.toDTOList(
-                stockMovementRepository.findMovementsBetween(startDate, endDate));
-    }
-
     private User resolveAuthenticatedUser() {
         String username = SecurityContextHolder.getContext().getAuthentication().getName();
         return userRepository.findByUsername(username)

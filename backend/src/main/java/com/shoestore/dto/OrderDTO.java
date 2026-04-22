@@ -16,6 +16,8 @@ import java.util.List;
 @Builder
 public class OrderDTO {
     private Long id;
+    /** Customer-facing identifier ("STP-XXXXXXXX"); see CustomerOrder.orderNumber. */
+    private String orderNumber;
     private String customerName;
     private String customerPhone;
     private String customerEmail;

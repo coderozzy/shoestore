@@ -62,6 +62,8 @@ public class OrderService {
     private final StripeService stripeService;
     private final OrderLookupTokenService orderLookupTokenService;
     private final AuditLogService auditLogService;
+    private final OrderNumberService orderNumberService;
+    private final OrderEmailService orderEmailService;
 
     @Transactional
     public CheckoutResponse initiateCheckout(CheckoutRequest request) {
@@ -70,6 +72,7 @@ public class OrderService {
         }
 
         CustomerOrder order = CustomerOrder.builder()
+                .orderNumber(orderNumberService.generateUnique())
                 .customerName(request.getCustomerName())
                 .customerPhone(request.getCustomerPhone())
                 .customerEmail(request.getCustomerEmail())
@@ -146,6 +149,7 @@ public class OrderService {
 
         return CheckoutResponse.builder()
                 .orderId(savedOrder.getId())
+                .orderNumber(savedOrder.getOrderNumber())
                 .clientSecret(paymentIntent.getClientSecret())
                 .paymentIntentId(paymentIntent.getId())
                 .lookupToken(lookupToken)
@@ -211,6 +215,14 @@ public class OrderService {
             if (order.getStatus() == OrderStatus.PENDING) {
                 order.setStatus(OrderStatus.PAID);
                 order.setPaidAt(LocalDateTime.now());
+                // Issue a fresh lookup token bound to this same payment intent
+                // so the email magic link works for the configured TTL even if
+                // the original token (handed back at create-payment-intent) is
+                // close to expiring. Async send: SMTP latency must not bleed
+                // back into the customer's confirm-payment HTTP latency.
+                String emailToken = orderLookupTokenService.issue(
+                        order.getId(), order.getStripePaymentIntentId());
+                orderEmailService.sendOrderConfirmation(order, emailToken);
             } else if (order.getStatus() == OrderStatus.CANCELLED) {
                 // Stock was already restored; we cannot silently re-decrement and
                 // flip back to PAID because that's H-7. Payment capture after
@@ -252,19 +264,28 @@ public class OrderService {
                 .toList();
     }
 
-    /** Admin view — full PII. */
-    @Transactional(readOnly = true)
-    public OrderDTO getOrderById(Long orderId) {
-        return toDTO(customerOrderRepository.findById(orderId)
-                .orElseThrow(() -> new ResourceNotFoundException("Order", "id", orderId)));
-    }
-
     /** Storefront view — PII stripped, token-gated. */
     @Transactional(readOnly = true)
     public StorefrontOrderDTO getOrderForCustomer(Long orderId, String lookupToken) {
         orderLookupTokenService.verify(lookupToken, orderId);
         return toStorefrontDTO(customerOrderRepository.findById(orderId)
                 .orElseThrow(() -> new ResourceNotFoundException("Order", "id", orderId)));
+    }
+
+    /**
+     * Storefront lookup by the public order number (e.g. STP-A7K9P3M2).
+     * The lookup token is still bound to the numeric id internally; we
+     * resolve the number → id first, then run the same HMAC check. We
+     * deliberately surface a 404 (not a "wrong token" 400) when the
+     * order number doesn't exist, so an attacker enumerating numbers
+     * can't tell "no such order" apart from "exists but wrong token".
+     */
+    @Transactional(readOnly = true)
+    public StorefrontOrderDTO getOrderForCustomerByNumber(String orderNumber, String lookupToken) {
+        CustomerOrder order = customerOrderRepository.findByOrderNumber(orderNumber)
+                .orElseThrow(() -> new ResourceNotFoundException("Order", "number", orderNumber));
+        orderLookupTokenService.verify(lookupToken, order.getId());
+        return toStorefrontDTO(order);
     }
 
     /**
@@ -330,6 +351,7 @@ public class OrderService {
     private OrderDTO toDTO(CustomerOrder order) {
         return OrderDTO.builder()
                 .id(order.getId())
+                .orderNumber(order.getOrderNumber())
                 .customerName(order.getCustomerName())
                 .customerPhone(order.getCustomerPhone())
                 .customerEmail(order.getCustomerEmail())
@@ -354,6 +376,7 @@ public class OrderService {
     private StorefrontOrderDTO toStorefrontDTO(CustomerOrder order) {
         return StorefrontOrderDTO.builder()
                 .id(order.getId())
+                .orderNumber(order.getOrderNumber())
                 .status(order.getStatus())
                 .totalAmount(order.getTotalAmount())
                 .createdAt(order.getCreatedAt())

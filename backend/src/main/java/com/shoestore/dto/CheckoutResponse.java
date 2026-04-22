@@ -21,6 +21,8 @@ import java.math.BigDecimal;
 @Builder
 public class CheckoutResponse {
     private Long orderId;
+    /** Customer-facing identifier ("STP-XXXXXXXX"); see CustomerOrder.orderNumber. */
+    private String orderNumber;
     private String clientSecret;
     private String paymentIntentId;
     private String lookupToken;

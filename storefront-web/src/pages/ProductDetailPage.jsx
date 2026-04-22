@@ -2,12 +2,25 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import storefrontService from '../services/storefrontService.js';
 import { useCart } from '../context/CartContext.jsx';
+import LeatherSwatch from '../components/LeatherSwatch.jsx';
 
+/** Format ₺ price with Turkish grouping. Matches the Steps design (no decimals). */
 const formatPrice = (value) => {
     const n = Number(value);
-    return Number.isFinite(n) ? `₺${n.toFixed(2)}` : '—';
+    if (!Number.isFinite(n)) return '—';
+    return `₺${n.toLocaleString('tr-TR', { maximumFractionDigits: 0 })}`;
 };
 
+/**
+ * Two-column product detail layout:
+ *   • Left: large square product image (or leather swatch fallback)
+ *   • Right: category eyebrow → serif title → color meta → price + sale
+ *            pill → description → size picker → primary CTA → perks
+ *
+ * Sizes use a single-row flex grid matching the design. Out-of-stock
+ * sizes are dimmed and strike-through. Selecting then clicking "Add to
+ * cart" briefly flashes a success state on the button.
+ */
 export default function ProductDetailPage() {
     const { productId } = useParams();
     const navigate = useNavigate();
@@ -17,7 +30,8 @@ export default function ProductDetailPage() {
     const [selectedImageIndex, setSelectedImageIndex] = useState(0);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
-    const [addedFeedback, setAddedFeedback] = useState(false);
+    const [added, setAdded] = useState(false);
+    const [sizeError, setSizeError] = useState('');
 
     useEffect(() => {
         let cancelled = false;
@@ -40,9 +54,10 @@ export default function ProductDetailPage() {
         return () => { cancelled = true; };
     }, [productId]);
 
-    const sortedSizes = useMemo(() => {
-        return [...(product?.sizes || [])].sort((a, b) => Number(a.size) - Number(b.size));
-    }, [product]);
+    const sortedSizes = useMemo(
+        () => [...(product?.sizes || [])].sort((a, b) => Number(a.size) - Number(b.size)),
+        [product]
+    );
 
     const productImages = useMemo(() => {
         if (product?.imageDataUrls?.length) return product.imageDataUrls;
@@ -52,10 +67,9 @@ export default function ProductDetailPage() {
 
     if (loading) {
         return (
-            <div className="product-detail" style={{ gap: '1rem' }}>
-                <div style={{ width: 120, height: 14, borderRadius: 4, background: '#e9ecef' }} />
+            <div className="product-detail">
                 <div className="product-detail-grid">
-                    <div className="skeleton-image" style={{ borderRadius: 16, aspectRatio: '1' }} />
+                    <div className="skeleton-image" style={{ borderRadius: 'var(--r-md)', aspectRatio: 1 }} />
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                         <div className="skeleton-text" style={{ width: '60%', height: 28, margin: 0 }} />
                         <div className="skeleton-text" style={{ width: '40%', margin: 0 }} />
@@ -69,7 +83,7 @@ export default function ProductDetailPage() {
     if (error) {
         return (
             <div className="store-alert">
-                {error} <Link to="/">Back to catalog</Link>
+                {error} <Link to="/shop" style={{ textDecoration: 'underline' }}>Back to the catalog</Link>
             </div>
         );
     }
@@ -80,9 +94,13 @@ export default function ProductDetailPage() {
         && Number(product.originalPrice) !== Number(product.effectivePrice);
 
     const totalStock = sortedSizes.reduce((s, sz) => s + (sz.stockQuantity || 0), 0);
+    const outOfStock = totalStock === 0;
 
     const handleAddToCart = () => {
-        if (selectedSize == null) return;
+        if (selectedSize == null) {
+            setSizeError('Please select a size');
+            return;
+        }
         addItem({
             productId: product.id,
             modelName: product.modelName,
@@ -91,12 +109,16 @@ export default function ProductDetailPage() {
             unitPrice: product.effectivePrice,
             quantity: 1
         });
-        setAddedFeedback(true);
-        setTimeout(() => setAddedFeedback(false), 1800);
+        setAdded(true);
+        setSizeError('');
+        setTimeout(() => setAdded(false), 2000);
     };
 
     const handleBuyNow = () => {
-        if (selectedSize == null) return;
+        if (selectedSize == null) {
+            setSizeError('Please select a size');
+            return;
+        }
         addItem({
             productId: product.id,
             modelName: product.modelName,
@@ -110,7 +132,7 @@ export default function ProductDetailPage() {
 
     return (
         <div className="product-detail">
-            <Link to="/" className="back-link">&larr; Back to catalog</Link>
+            <Link to="/shop" className="back-link">← Back to the catalog</Link>
 
             <div className="product-detail-grid">
                 <div className="product-detail-image">
@@ -120,28 +142,38 @@ export default function ProductDetailPage() {
                             alt={product.modelName}
                         />
                     ) : (
-                        <span style={{ fontSize: '6rem' }}>👟</span>
+                        <LeatherSwatch color={product.color} id={product.id} />
                     )}
                 </div>
 
                 <div className="product-detail-body">
+                    {product.categoryName && (
+                        <p className="product-detail-meta">{product.categoryName}</p>
+                    )}
                     <h1>{product.modelName}</h1>
-                    <p className="product-detail-meta">
-                        {product.color}
-                        {product.categoryName ? ` · ${product.categoryName}` : ''}
-                        {product.gender ? ` · ${product.gender === 'MALE' ? 'Men' : 'Women'}` : ''}
+                    <p className="product-detail-color">
+                        Color: <strong>{product.color}</strong>
+                        {product.gender && (
+                            <> · {product.gender === 'MALE' ? 'Men' : 'Women'}</>
+                        )}
                     </p>
 
-                    <p className="product-detail-price">
+                    <div className="product-detail-price">
                         {showStrike && (
                             <span className="original-price">{formatPrice(product.originalPrice)}</span>
                         )}
                         <span className="effective-price">{formatPrice(product.effectivePrice)}</span>
-                    </p>
+                        {showStrike && <span className="sale-pill">Sale</span>}
+                    </div>
 
                     {product.discountName && (
-                        <p className="discount-badge">🏷️ {product.discountName}</p>
+                        <p className="discount-badge">{product.discountName}</p>
                     )}
+
+                    <p className="product-detail-desc">
+                        {product.description
+                            || `Full-grain ${(product.color || 'leather').toLowerCase()} leather upper with leather lining and insole. Durable rubber sole. Goodyear welted construction ensures longevity and full resolability.`}
+                    </p>
 
                     {productImages.length > 1 && (
                         <div className="product-gallery-strip">
@@ -149,17 +181,18 @@ export default function ProductDetailPage() {
                                 <button
                                     key={`${product.id}-${index}`}
                                     type="button"
-                                    className={`product-gallery-thumb ${selectedImageIndex === index ? 'active' : ''}`}
+                                    className={`product-gallery-thumb${selectedImageIndex === index ? ' active' : ''}`}
                                     onClick={() => setSelectedImageIndex(index)}
+                                    aria-label={`Show image ${index + 1}`}
                                 >
-                                    <img src={image} alt={`${product.modelName} ${index + 1}`} />
+                                    <img src={image} alt="" />
                                 </button>
                             ))}
                         </div>
                     )}
 
                     <div className="size-picker">
-                        <h3>Choose size</h3>
+                        <h3>Select size — EU</h3>
                         <div className="size-grid">
                             {sortedSizes.map((size) => {
                                 const disabled = size.stockQuantity === 0;
@@ -168,49 +201,48 @@ export default function ProductDetailPage() {
                                     <button
                                         key={size.size}
                                         type="button"
-                                        className={`size-btn ${active ? 'active' : ''} ${disabled ? 'disabled' : ''}`}
-                                        onClick={() => !disabled && setSelectedSize(size.size)}
+                                        className={`size-btn${active ? ' active' : ''}${disabled ? ' disabled' : ''}`}
+                                        onClick={() => {
+                                            if (disabled) return;
+                                            setSelectedSize(size.size);
+                                            setSizeError('');
+                                        }}
                                         disabled={disabled}
                                     >
                                         {size.size}
-                                        <span className="size-stock">
-                                            {disabled ? 'sold out' : `${size.stockQuantity} left`}
-                                        </span>
                                     </button>
                                 );
                             })}
                         </div>
+                        {sizeError && <p className="err-msg">{sizeError}</p>}
                     </div>
 
-                    {totalStock === 0 ? (
-                        <p style={{
-                            marginTop: '1.5rem',
-                            color: 'var(--danger)',
-                            fontWeight: 700,
-                            fontSize: '0.95rem'
-                        }}>
-                            This product is currently out of stock.
-                        </p>
+                    {outOfStock ? (
+                        <button className="store-button full" disabled>Out of stock</button>
                     ) : (
                         <div className="product-detail-actions">
                             <button
                                 type="button"
-                                className="store-button outline"
+                                className={`store-button full${added ? ' done' : ''}`}
                                 onClick={handleAddToCart}
-                                disabled={selectedSize == null}
                             >
-                                {addedFeedback ? 'Added!' : 'Add to cart'}
+                                {added ? 'Added to cart' : 'Add to cart'}
                             </button>
                             <button
                                 type="button"
-                                className="store-button"
+                                className="store-button outline full"
                                 onClick={handleBuyNow}
-                                disabled={selectedSize == null}
                             >
                                 Buy now
                             </button>
                         </div>
                     )}
+
+                    <div className="product-perks">
+                        <span>Free shipping on orders over ₺500</span>
+                        <span>14-day hassle-free returns</span>
+                        <span>Genuine full-grain leather guarantee</span>
+                    </div>
                 </div>
             </div>
         </div>

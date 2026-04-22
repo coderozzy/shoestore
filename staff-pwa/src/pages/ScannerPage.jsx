@@ -205,8 +205,8 @@ export default function ScannerPage() {
             {successMsg && (
                 <div className="sell-success-popup">
                     <div className="success-content">
-                        <div className="success-icon">🎉</div>
-                        <h3>Operation Successful!</h3>
+                        <div className="success-icon" aria-hidden>✓</div>
+                        <h3>Done</h3>
                         <p>{successMsg}</p>
                     </div>
                 </div>
@@ -224,19 +224,18 @@ export default function ScannerPage() {
 
             {error && !loading && (
                 <div className="scanner-result error-result">
-                    <div className="result-icon">❌</div>
                     <h3>Error</h3>
                     <p>{error}</p>
                     {scannedQrForCreation && (
                         <div className="create-product-action">
                             <p className="create-hint">This QR code is not registered in the system.</p>
                             <button className="btn btn-primary" onClick={handleCreateProduct}>
-                                ✨ Create New Product
+                                Create new product
                             </button>
                         </div>
                     )}
                     <button className="btn btn-secondary" onClick={handleScanAgain}>
-                        Scan Again
+                        Scan again
                     </button>
                 </div>
             )}
@@ -244,8 +243,7 @@ export default function ScannerPage() {
             {product && !loading && (
                 <div className="scanner-result success-result fade-in">
                     <div className="result-header">
-                        <div className="result-icon">✅</div>
-                        <h3>Product Found</h3>
+                        <h3>Product found</h3>
                     </div>
 
                     <ProductCard
@@ -259,20 +257,20 @@ export default function ScannerPage() {
                             className={`tab-btn ${mode === 'sell' ? 'active' : ''}`}
                             onClick={() => setMode('sell')}
                         >
-                            💰 Sell
+                            Sell
                         </button>
                         <button
                             className={`tab-btn ${mode === 'return' ? 'active' : ''}`}
                             onClick={() => setMode('return')}
                         >
-                            ↩️ Return
+                            Return
                         </button>
                         {isAdmin() && (
                             <button
                                 className={`tab-btn ${mode === 'stock' ? 'active' : ''}`}
                                 onClick={() => setMode('stock')}
                             >
-                                📦 Stock Management
+                                Stock
                             </button>
                         )}
                     </div>
@@ -316,7 +314,7 @@ export default function ScannerPage() {
                                         onClick={handleSell}
                                         disabled={!selectedSize || actionLoading}
                                     >
-                                        {actionLoading ? 'Processing...' : `💰 Sell (${selectedSize ? `Size: ${selectedSize}` : 'Select'})`}
+                                        {actionLoading ? 'Processing…' : `Sell · ${selectedSize ? `Size ${selectedSize}` : 'select size'}`}
                                     </button>
                                 </div>
                             ) : (
@@ -376,7 +374,7 @@ export default function ScannerPage() {
                                         onClick={handleReturn}
                                         disabled={!selectedSize || actionLoading}
                                     >
-                                        {actionLoading ? 'Processing...' : `↩️ Return (${selectedSize ? `Size: ${selectedSize}` : 'Select'})`}
+                                        {actionLoading ? 'Processing…' : `Return · ${selectedSize ? `Size ${selectedSize}` : 'select size'}`}
                                     </button>
                                 </div>
                             ) : (
@@ -390,7 +388,7 @@ export default function ScannerPage() {
                     {/* STOCK MODE (Admin only) */}
                     {mode === 'stock' && isAdmin() && (
                         <div className="stock-section">
-                            <h4>Stock Management (Warehouse)</h4>
+                            <h4>Stock management</h4>
 
                             {/* Existing Sizes */}
                             <div className="existing-sizes-list">
@@ -444,7 +442,7 @@ export default function ScannerPage() {
                                     />
                                 </div>
                                 <button className="btn btn-primary w-100" type="submit" disabled={actionLoading}>
-                                    {actionLoading ? 'Adding...' : '✨ Add New Size'}
+                                    {actionLoading ? 'Adding…' : 'Add new size'}
                                 </button>
                             </form>
                         </div>
@@ -452,13 +450,13 @@ export default function ScannerPage() {
 
                     <div className="result-actions">
                         <button className="btn btn-secondary" onClick={handleScanAgain}>
-                            New Scan
+                            New scan
                         </button>
                         <button
                             className="btn btn-outline"
                             onClick={() => navigate(`/products`)}
                         >
-                            Return to List
+                            Browse products
                         </button>
                     </div>
                 </div>

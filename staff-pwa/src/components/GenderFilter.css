@@ -1,50 +1,41 @@
 .gender-filter {
-    display: flex;
-    gap: var(--spacing-sm);
-    padding: var(--spacing-xs);
-    background: var(--bg-secondary);
-    border-radius: var(--radius-lg);
+    display: inline-flex;
+    gap: 3px;
+    padding: 3px;
+    background: var(--surface-alt);
+    border-radius: var(--radius-md);
     border: 1px solid var(--border-color);
+    align-self: flex-start;
 }
 
 .filter-btn {
-    display: flex;
+    display: inline-flex;
     align-items: center;
-    gap: var(--spacing-xs);
-    padding: var(--spacing-sm) var(--spacing-md);
+    gap: 0.35rem;
+    padding: 0.4rem 0.8rem;
     background: transparent;
     border: none;
-    border-radius: var(--radius-md);
+    border-radius: var(--radius-sm);
     color: var(--text-secondary);
-    font-size: 0.875rem;
+    font-family: inherit;
+    font-size: 0.78rem;
+    font-weight: 500;
     cursor: pointer;
-    transition: all var(--transition-fast);
+    transition: background var(--transition-fast), color var(--transition-fast);
+    letter-spacing: 0.02em;
 }
 
-.filter-btn:hover {
-    background: rgba(255, 255, 255, 0.1);
-    color: var(--text-primary);
-}
+.filter-btn:hover { color: var(--text-primary); }
 
 .filter-btn.active {
     background: var(--accent-primary);
-    color: var(--text-primary);
+    color: var(--accent-fg);
 }
 
-.filter-icon {
-    font-size: 1.1rem;
-}
+.filter-icon { font-size: 0.95rem; }
 
 @media (max-width: 480px) {
-    .filter-btn {
-        padding: var(--spacing-sm);
-    }
-
-    .filter-label {
-        display: none;
-    }
-
-    .filter-icon {
-        font-size: 1.25rem;
-    }
+    .filter-btn { padding: 0.4rem 0.6rem; }
+    .filter-label { display: inline; }
+    .filter-icon { display: none; }
 }

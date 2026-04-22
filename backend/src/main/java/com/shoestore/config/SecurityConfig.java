@@ -78,7 +78,6 @@ public class SecurityConfig {
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
 
                         .requestMatchers("/api/categories/**").hasAnyRole("STAFF", "ADMIN")
-                        .requestMatchers("/api/scan-history/**").hasAnyRole("STAFF", "ADMIN")
 
                         .anyRequest().authenticated()
                 )

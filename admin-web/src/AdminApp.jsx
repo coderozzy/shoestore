@@ -5,12 +5,18 @@ import PrivateRoute from './components/PrivateRoute.jsx';
 import adminService from './services/adminService.js';
 import ProductsPage from './pages/ProductsPage.jsx';
 import StaffPage from './pages/StaffPage.jsx';
+import CategoriesPage from './pages/CategoriesPage.jsx';
 import {
     BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
     ResponsiveContainer, Cell, LineChart, Line
 } from 'recharts';
 
-const COLORS = ['#667eea', '#764ba2', '#f093fb', '#f5576c', '#4facfe', '#00f2fe', '#43e97b', '#38f9d7'];
+// Warm leather palette — keep the array length the same so existing
+// `COLORS[i % COLORS.length]` callers stay deterministic.
+const COLORS = ['#7a4c2c', '#5e3820', '#9c6b3f', '#3d2c1e', '#b58656', '#6a5b4e', '#1c1510', '#a05a2c'];
+const CHART_AXIS = '#6a5b4e';
+const CHART_GRID = 'rgba(28, 21, 16, 0.06)';
+const CHART_AXIS_LINE = 'rgba(28, 21, 16, 0.12)';
 
 const DASHBOARD_DAYS_WINDOW = 30;
 const STOCK_MOVEMENTS_DAYS_WINDOW = 7;
@@ -173,12 +179,12 @@ function DashboardPage() {
                 {chartData.length > 0 ? (
                     <ResponsiveContainer width="100%" height={320}>
                         <BarChart data={chartData} margin={{ top: 10, right: 20, left: 40, bottom: 60 }}>
-                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.06)" />
+                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={CHART_GRID} />
                             <XAxis dataKey="shortLabel" angle={-45} textAnchor="end" interval={0}
-                                   tick={{ fill: '#94a3b8', fontSize: 11 }} axisLine={{ stroke: 'rgba(255,255,255,0.1)' }} />
+                                   tick={{ fill: CHART_AXIS, fontSize: 11 }} axisLine={{ stroke: CHART_AXIS_LINE }} />
                             <YAxis tickFormatter={(v) => `₺${(v / 1000).toFixed(0)}K`}
-                                   tick={{ fill: '#94a3b8', fontSize: 11 }} axisLine={{ stroke: 'rgba(255,255,255,0.1)' }} />
-                            <Tooltip content={<ChartTooltip />} cursor={{ fill: 'rgba(255,255,255,0.03)' }} />
+                                   tick={{ fill: CHART_AXIS, fontSize: 11 }} axisLine={{ stroke: CHART_AXIS_LINE }} />
+                            <Tooltip content={<ChartTooltip />} cursor={{ fill: 'rgba(28,21,16,0.04)' }} />
                             <Bar dataKey="totalRevenue" radius={[6, 6, 0, 0]} maxBarSize={48}>
                                 {chartData.map((entry, i) => (
                                     <Cell key={entry.productId ?? entry.modelName ?? i}
@@ -198,14 +204,14 @@ function DashboardPage() {
                     <h3>📅 Daily Revenue Trend</h3>
                     <ResponsiveContainer width="100%" height={250}>
                         <LineChart data={dailyData} margin={{ top: 10, right: 20, left: 40, bottom: 10 }}>
-                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.06)" />
-                            <XAxis dataKey="date" tick={{ fill: '#94a3b8', fontSize: 10 }}
-                                   axisLine={{ stroke: 'rgba(255,255,255,0.1)' }}
+                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={CHART_GRID} />
+                            <XAxis dataKey="date" tick={{ fill: CHART_AXIS, fontSize: 10 }}
+                                   axisLine={{ stroke: CHART_AXIS_LINE }}
                                    tickFormatter={(v) => new Date(v).toLocaleDateString('tr-TR', { day: '2-digit', month: '2-digit' })} />
                             <YAxis tickFormatter={(v) => `₺${v}`}
-                                   tick={{ fill: '#94a3b8', fontSize: 11 }} axisLine={{ stroke: 'rgba(255,255,255,0.1)' }} />
+                                   tick={{ fill: CHART_AXIS, fontSize: 11 }} axisLine={{ stroke: CHART_AXIS_LINE }} />
                             <Tooltip formatter={(v) => formatCurrency(v)} labelFormatter={(l) => new Date(l).toLocaleDateString('tr-TR')} />
-                            <Line type="monotone" dataKey="totalRevenue" stroke="#667eea" strokeWidth={2} dot={{ r: 3 }} />
+                            <Line type="monotone" dataKey="totalRevenue" stroke="#7a4c2c" strokeWidth={2} dot={{ r: 3, fill: '#7a4c2c' }} />
                         </LineChart>
                     </ResponsiveContainer>
                 </div>
@@ -285,8 +291,8 @@ function AdminLoginPage() {
     return (
         <div className="admin-login-page">
             <div className="admin-card">
-                <h1>🛡️ Admin Portal</h1>
-                <p>Dashboard, orders, discounts and reporting</p>
+                <h1>Steps</h1>
+                <p>Admin portal — sign in to manage products, orders and discounts.</p>
                 <form onSubmit={handleSubmit} className="product-form">
                     {error && <div className="alert alert-error">{error}</div>}
                     <div className="form-group">
@@ -661,21 +667,23 @@ function AdminShell() {
     return (
         <div className="admin-shell">
             <nav className="admin-shell-nav">
-                <NavLink to="/" end>📊 Dashboard</NavLink>
-                <NavLink to="/products">👟 Products</NavLink>
-                <NavLink to="/orders">📦 Online Orders</NavLink>
-                <NavLink to="/discounts">🏷️ Discounts</NavLink>
-                <NavLink to="/staff-sales">👥 Staff Sales</NavLink>
-                <NavLink to="/staff">🧑‍💼 Staff</NavLink>
+                <NavLink to="/" end>Dashboard</NavLink>
+                <NavLink to="/products">Products</NavLink>
+                <NavLink to="/categories">Categories</NavLink>
+                <NavLink to="/orders">Online orders</NavLink>
+                <NavLink to="/discounts">Discounts</NavLink>
+                <NavLink to="/staff-sales">Staff sales</NavLink>
+                <NavLink to="/staff">Staff</NavLink>
                 <div className="nav-spacer" />
-                <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>{user?.username}</span>
+                <span>Signed in as {user?.username || 'admin'}</span>
                 <button className="btn btn-secondary btn-sm" onClick={() => { logout(); navigate('/login'); }}>
-                    Logout
+                    Sign out
                 </button>
             </nav>
             <Routes>
                 <Route path="/" element={<DashboardPage />} />
                 <Route path="/products" element={<ProductsPage />} />
+                <Route path="/categories" element={<CategoriesPage />} />
                 <Route path="/orders" element={<OrdersPage />} />
                 <Route path="/discounts" element={<DiscountsPage />} />
                 <Route path="/staff-sales" element={<StaffSalesPage />} />

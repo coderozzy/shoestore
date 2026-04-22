@@ -22,6 +22,8 @@ import java.util.List;
 @Builder
 public class StorefrontOrderDTO {
     private Long id;
+    /** Customer-facing identifier ("STP-XXXXXXXX"); see CustomerOrder.orderNumber. */
+    private String orderNumber;
     private OrderStatus status;
     private BigDecimal totalAmount;
     private LocalDateTime createdAt;

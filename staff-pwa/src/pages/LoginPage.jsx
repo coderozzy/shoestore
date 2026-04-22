@@ -34,9 +34,8 @@ export default function LoginPage() {
         <div className="login-page">
             <div className="login-container">
                 <div className="login-header">
-                    <span className="login-icon">👟</span>
-                    <h1>ShoeStore</h1>
-                    <p>Staff Scanner Portal</p>
+                    <h1 className="login-brand">Steps</h1>
+                    <p>Staff portal — sign in to continue</p>
                 </div>
 
                 <form onSubmit={handleSubmit} className="login-form">

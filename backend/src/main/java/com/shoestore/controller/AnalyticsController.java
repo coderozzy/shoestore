@@ -1,7 +1,6 @@
 package com.shoestore.controller;
 
 import com.shoestore.dto.DailyRevenueDTO;
-import com.shoestore.dto.SalesRecordDTO;
 import com.shoestore.dto.SalesStatsDTO;
 import com.shoestore.service.AnalyticsService;
 import lombok.RequiredArgsConstructor;
@@ -38,13 +37,5 @@ public class AnalyticsController {
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime endDate,
             @RequestParam(defaultValue = "DAY") String groupBy) {
         return ResponseEntity.ok(analyticsService.getSalesSummary(startDate, endDate, groupBy));
-    }
-
-    @GetMapping("/sales-records")
-    @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<List<SalesRecordDTO>> getSalesRecords(
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime startDate,
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime endDate) {
-        return ResponseEntity.ok(analyticsService.getSalesRecords(startDate, endDate));
     }
 }

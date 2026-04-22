@@ -121,22 +121,22 @@ export default function GenerateQRPage() {
 
     return (
         <div className="generate-qr-page">
-            <h1>🏷️ Generate QR Code</h1>
+            <h1>New QR</h1>
 
             {/* Step 1: Generate QR */}
             {step === 1 && (
                 <div className="step-container">
                     <div className="step-info">
                         <div className="step-number">1</div>
-                        <h2>Create New QR Code</h2>
-                        <p>Generate a QR code for a new product.</p>
+                        <h2>Create new QR code</h2>
+                        <p>Generate a unique QR code for a new product, then fill in the details.</p>
                     </div>
 
                     {loading ? (
-                        <LoadingSpinner text="Generating QR code..." />
+                        <LoadingSpinner text="Generating QR code…" />
                     ) : (
                         <button className="btn btn-primary btn-large" onClick={() => handleGenerateQR()}>
-                            🔲 Generate QR Code
+                            Generate QR code
                         </button>
                     )}
 
@@ -153,7 +153,7 @@ export default function GenerateQRPage() {
                     </div>
 
                     <form onSubmit={handleSubmit} className="product-form">
-                        <h2>Enter Product Details</h2>
+                        <h2>Product details</h2>
 
                         <div className="form-group">
                             <label htmlFor="modelName">Model Name *</label>
@@ -239,10 +239,10 @@ export default function GenerateQRPage() {
 
                         <div className="form-actions">
                             <button type="button" className="btn btn-secondary" onClick={() => setStep(1)}>
-                                ← Back
+                                Back
                             </button>
                             <button type="submit" className="btn btn-primary" disabled={loading}>
-                                {loading ? 'Saving...' : '✓ Save Product'}
+                                {loading ? 'Saving…' : 'Save product'}
                             </button>
                         </div>
                     </form>
@@ -252,8 +252,8 @@ export default function GenerateQRPage() {
             {/* Step 3: Success */}
             {step === 3 && (
                 <div className="step-container success-container">
-                    <div className="success-icon">🎉</div>
-                    <h2>Product Successfully Created!</h2>
+                    <div className="success-icon" aria-hidden>✓</div>
+                    <h2>Product created</h2>
 
                     <div className="qr-preview">
                         <img src={qrData.imageUrl} alt="QR Code" />
@@ -279,7 +279,7 @@ export default function GenerateQRPage() {
 
                     <div className="success-actions">
                         <button className="btn btn-secondary" onClick={handlePrintQR}>
-                            🖨️ Print QR Code
+                            Print QR label
                         </button>
                         <button className="btn btn-primary" onClick={() => {
                             setStep(1);
@@ -293,12 +293,12 @@ export default function GenerateQRPage() {
                                 price: ''
                             });
                         }}>
-                            + Add New Product
+                            Add another
                         </button>
                     </div>
 
                     <button className="btn btn-link" onClick={() => navigate('/products')}>
-                        View Products →
+                        View products →
                     </button>
                 </div>
             )}

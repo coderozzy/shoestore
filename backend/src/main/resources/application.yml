@@ -29,6 +29,26 @@ spring:
     baseline-on-migrate: true
     locations: classpath:db/migration
 
+  # SMTP for the customer order-confirmation email. All values are env-driven
+  # so secrets never live in this file. Leave SPRING_MAIL_HOST blank in dev
+  # to disable mail entirely — OrderEmailService logs and no-ops in that mode.
+  mail:
+    host: ${SPRING_MAIL_HOST:}
+    port: ${SPRING_MAIL_PORT:587}
+    username: ${SPRING_MAIL_USERNAME:}
+    password: ${SPRING_MAIL_PASSWORD:}
+    properties:
+      mail:
+        smtp:
+          auth: ${SPRING_MAIL_SMTP_AUTH:true}
+          starttls:
+            enable: ${SPRING_MAIL_STARTTLS:true}
+          # Conservative timeouts so a misbehaving SMTP server can't
+          # pin the @Async worker thread indefinitely.
+          connectiontimeout: 5000
+          timeout: 10000
+          writetimeout: 10000
+
 # JWT. JWT_SECRET is required — the application refuses to start if it is missing,
 # too short, or not base64 (see JwtTokenProvider).
 # Generate with:  openssl rand -base64 48
@@ -58,6 +78,17 @@ app:
   order-token:
     secret: ${ORDER_TOKEN_SECRET:${JWT_SECRET}}
     ttl-ms: ${ORDER_TOKEN_TTL_MS:604800000}
+
+  # Used by OrderEmailService when constructing the magic "track your
+  # order" link in the confirmation email. Must match whatever public URL
+  # customers actually hit (i.e. the reverse-proxy origin in dev/prod).
+  public-base-url: ${APP_PUBLIC_BASE_URL:http://localhost:3000}
+
+  mail:
+    # `From` header on outbound mail. Most SMTP relays require this to
+    # match the authenticated mailbox; we only enforce it's non-blank
+    # when SMTP is itself configured.
+    from: ${APP_MAIL_FROM:Steps Store <noreply@example.com>}
 
   # Bootstrap admin — applied only on first boot when users table is empty.
   bootstrap:

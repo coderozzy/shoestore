@@ -2,20 +2,25 @@ import { useEffect, useState } from 'react';
 import { Link, NavLink, Outlet, useLocation } from 'react-router-dom';
 import { useCart } from '../context/CartContext.jsx';
 
+/**
+ * Shared chrome for the Steps storefront:
+ * announcement bar, sticky top-bar with wordmark + cart icon, and the
+ * footer. Navigation items mirror the Steps design (Shop + three category
+ * shortcuts); legacy "Categories"/"Contact" routes are still
+ * accessible from the mobile drawer + footer.
+ */
 export default function Layout() {
     const { totalItemCount } = useCart();
     const [scrolled, setScrolled] = useState(false);
     const [menuOpen, setMenuOpen] = useState(false);
     const location = useLocation();
 
-    /* scroll shadow */
     useEffect(() => {
         const handle = () => setScrolled(window.scrollY > 8);
         window.addEventListener('scroll', handle, { passive: true });
         return () => window.removeEventListener('scroll', handle);
     }, []);
 
-    /* close mobile menu on route change */
     useEffect(() => {
         setMenuOpen(false);
         window.scrollTo({ top: 0, behavior: 'instant' });
@@ -23,59 +28,81 @@ export default function Layout() {
 
     return (
         <div className="storefront-shell">
-            {/* Announcement bar */}
+            {/* Announcement bar — thin, uppercase, dark */}
             <div className="announcement-bar">
-                Free shipping on orders over ₺500 &mdash; <Link to="/shop">Shop now</Link>
+                Free shipping on orders over ₺500
+                <Link to="/shop">Shop now</Link>
             </div>
 
-            {/* Header */}
+            {/* Top bar */}
             <header className={`storefront-topbar${scrolled ? ' scrolled' : ''}`}>
-                <Link to="/" className="brand">
-                    <span className="brand-mark">👟</span>
-                    <span className="brand-name">ShoeStore</span>
-                </Link>
+                <div className="storefront-topbar-inner">
+                    <Link to="/" className="brand" aria-label="Steps home">
+                        Steps
+                    </Link>
 
-                {/* Desktop nav */}
-                <nav className="storefront-nav desktop-nav">
-                    <NavLink to="/" end>Home</NavLink>
-                    <NavLink to="/shop">Shop</NavLink>
-                    <NavLink to="/categories">Categories</NavLink>
-                    <NavLink to="/about">About</NavLink>
-                    <NavLink to="/contact">Contact</NavLink>
-                </nav>
+                    <nav className="storefront-nav desktop-nav">
+                        <NavLink to="/shop" end={false}>Shop</NavLink>
+                        <NavLink to="/shop?category=Sneakers">Sneakers</NavLink>
+                        <NavLink to="/shop?category=Boots">Boots</NavLink>
+                        <NavLink to="/shop?category=Oxfords">Oxfords</NavLink>
+                        <NavLink to="/shop?category=Loafers">Loafers</NavLink>
+                        <NavLink to="/shop?category=Sandals">Sandals</NavLink>
+                        <NavLink to="/shop?category=Heels">Heels</NavLink>
+                        <NavLink to="/shop?category=Flats">Flats</NavLink>
+                        <NavLink to="/shop?category=Trainers">Trainers</NavLink>
+                        <NavLink to="/track">Track order</NavLink>
+                    </nav>
 
-                <div className="nav-right">
-                    <NavLink to="/track" className="nav-icon-link" title="Track order">
-                        📋
-                    </NavLink>
-                    <NavLink to="/cart" className="cart-link" title="Cart">
-                        🛒
-                        {totalItemCount > 0 && <span className="cart-badge">{totalItemCount}</span>}
-                    </NavLink>
+                    <div className="nav-right">
+                        <NavLink to="/track" className="nav-icon-link" title="Track order" aria-label="Track order">
+                            <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                                <rect x="3" y="4" width="18" height="16" rx="2" />
+                                <path d="M8 2v4" />
+                                <path d="M16 2v4" />
+                                <path d="M3 10h18" />
+                            </svg>
+                        </NavLink>
+                        <NavLink to="/cart" className="cart-link" title="Cart" aria-label="Cart">
+                            <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                                <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z" />
+                                <line x1="3" y1="6" x2="21" y2="6" />
+                                <path d="M16 10a4 4 0 01-8 0" />
+                            </svg>
+                            {totalItemCount > 0 && <span className="cart-badge">{totalItemCount}</span>}
+                        </NavLink>
 
-                    {/* Hamburger (mobile) */}
-                    <button
-                        className={`hamburger ${menuOpen ? 'open' : ''}`}
-                        onClick={() => setMenuOpen(!menuOpen)}
-                        aria-label="Toggle menu"
-                    >
-                        <span /><span /><span />
-                    </button>
+                        <button
+                            className={`hamburger${menuOpen ? ' open' : ''}`}
+                            onClick={() => setMenuOpen((o) => !o)}
+                            aria-label="Toggle menu"
+                            aria-expanded={menuOpen}
+                        >
+                            <span /><span /><span />
+                        </button>
+                    </div>
                 </div>
             </header>
 
             {/* Mobile drawer */}
             {menuOpen && <div className="mobile-backdrop" onClick={() => setMenuOpen(false)} />}
-            <nav className={`mobile-drawer ${menuOpen ? 'open' : ''}`}>
+            <nav className={`mobile-drawer${menuOpen ? ' open' : ''}`} aria-hidden={!menuOpen}>
                 <NavLink to="/" end>Home</NavLink>
-                <NavLink to="/shop">Shop All</NavLink>
-                <NavLink to="/categories">Categories</NavLink>
-                <NavLink to="/about">About Us</NavLink>
+                <NavLink to="/shop">Shop all</NavLink>
+                <NavLink to="/shop?category=Sneakers">Sneakers</NavLink>
+                <NavLink to="/shop?category=Boots">Boots</NavLink>
+                <NavLink to="/shop?category=Oxfords">Oxfords</NavLink>
+                <NavLink to="/shop?category=Loafers">Loafers</NavLink>
+                <NavLink to="/shop?category=Sandals">Sandals</NavLink>
+                <NavLink to="/shop?category=Heels">Heels</NavLink>
+                <NavLink to="/shop?category=Flats">Flats</NavLink>
+                <NavLink to="/shop?category=Trainers">Trainers</NavLink>
+                <NavLink to="/categories">All categories</NavLink>
                 <NavLink to="/contact">Contact</NavLink>
-                <NavLink to="/track">Track Order</NavLink>
+                <NavLink to="/track">Track order</NavLink>
                 <div className="mobile-drawer-divider" />
                 <NavLink to="/cart" className="mobile-cart-link">
-                    🛒 Cart {totalItemCount > 0 && <span className="cart-badge">{totalItemCount}</span>}
+                    Cart{totalItemCount > 0 && <span className="cart-badge" style={{ position: 'static' }}>{totalItemCount}</span>}
                 </NavLink>
             </nav>
 
@@ -87,37 +114,44 @@ export default function Layout() {
             <footer className="storefront-footer">
                 <div className="footer-grid">
                     <div className="footer-col">
-                        <Link to="/" className="brand footer-brand">
-                            <span className="brand-mark">👟</span>
-                            <span className="brand-name">ShoeStore</span>
-                        </Link>
-                        <p className="footer-tagline">Handpicked sneakers &mdash; curated for comfort, designed for the streets.</p>
+                        <Link to="/" className="brand footer-brand">Steps</Link>
+                        <p className="footer-tagline">
+                            Quality leather footwear at fair prices. Made to last a lifetime.
+                        </p>
                     </div>
                     <div className="footer-col">
                         <h4>Shop</h4>
-                        <Link to="/shop">All Products</Link>
-                        <Link to="/categories">Categories</Link>
-                        <Link to="/shop?sale=true">On Sale</Link>
-                        <Link to="/shop?sort=newest">New Arrivals</Link>
+                        <Link to="/shop">All shoes</Link>
+                        <Link to="/shop?category=Sneakers">Sneakers</Link>
+                        <Link to="/shop?category=Boots">Boots</Link>
+                        <Link to="/shop?category=Oxfords">Oxfords</Link>
+                        <Link to="/shop?category=Loafers">Loafers</Link>
+                        <Link to="/shop?category=Sandals">Sandals</Link>
+                        <Link to="/shop?category=Heels">Heels</Link>
+                        <Link to="/shop?category=Flats">Flats</Link>
+                        <Link to="/shop?category=Trainers">Trainers</Link>
+                        <Link to="/shop?sale=true">On sale</Link>
                     </div>
                     <div className="footer-col">
                         <h4>Help</h4>
-                        <Link to="/track">Track Order</Link>
-                        <Link to="/contact">Contact Us</Link>
-                        <Link to="/about">About Us</Link>
+                        <Link to="/track">Track order</Link>
+                        <Link to="/contact">Contact us</Link>
+                        <Link to="/shop">Size guide</Link>
                     </div>
                     <div className="footer-col">
-                        <h4>Secure Payments</h4>
-                        <p className="footer-note">All transactions are encrypted and processed securely through Stripe.</p>
+                        <h4>Secure payments</h4>
+                        <p className="footer-note">
+                            All transactions are encrypted and processed securely through Stripe.
+                        </p>
                         <div className="payment-icons">
-                            <span title="Visa">💳</span>
-                            <span title="Mastercard">💳</span>
-                            <span title="Stripe">🔒</span>
+                            <span>Visa</span>
+                            <span>Mastercard</span>
+                            <span>Stripe</span>
                         </div>
                     </div>
                 </div>
                 <div className="footer-bottom">
-                    <span>&copy; {new Date().getFullYear()} ShoeStore. All rights reserved.</span>
+                    © {new Date().getFullYear()} Steps. All rights reserved.
                 </div>
             </footer>
         </div>

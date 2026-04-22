@@ -14,10 +14,10 @@ function SkeletonCard() {
 }
 
 const SORT_OPTIONS = [
-    { value: 'newest', label: 'Newest first' },
-    { value: 'price-asc', label: 'Price: low to high' },
-    { value: 'price-desc', label: 'Price: high to low' },
-    { value: 'name-asc', label: 'Name: A to Z' },
+    { value: 'newest', label: 'Featured' },
+    { value: 'price-asc', label: 'Price: low → high' },
+    { value: 'price-desc', label: 'Price: high → low' },
+    { value: 'name-asc', label: 'Name: A to Z' }
 ];
 
 function sortProducts(list, sortKey) {
@@ -35,13 +35,18 @@ function sortProducts(list, sortKey) {
     }
 }
 
+/**
+ * Shop listing page, Steps design: editorial header with the active
+ * category as the page title + style count, pill-shaped category chips
+ * (All, then each category), search + sort on the right. Falls through
+ * to a 1/2/3/4 column grid controlled by the --cols CSS variable.
+ */
 export default function ShopPage() {
     const [searchParams, setSearchParams] = useSearchParams();
     const [products, setProducts] = useState([]);
     const [categories, setCategories] = useState([]);
     const [loading, setLoading] = useState(true);
 
-    /* Read URL params */
     const urlCategory = searchParams.get('category') || 'ALL';
     const urlGender = searchParams.get('gender') || 'ALL';
     const urlSort = searchParams.get('sort') || 'newest';
@@ -68,7 +73,6 @@ export default function ShopPage() {
         return () => { cancelled = true; };
     }, []);
 
-    /* Sync URL params when they change externally (e.g. from category page link) */
     useEffect(() => {
         setSelectedCategory(searchParams.get('category') || 'ALL');
         setSelectedGender(searchParams.get('gender') || 'ALL');
@@ -79,7 +83,7 @@ export default function ShopPage() {
 
     const filtered = useMemo(() => {
         const needle = query.trim().toLowerCase();
-        let list = products.filter((p) => {
+        const list = products.filter((p) => {
             if (selectedCategory !== 'ALL' && p.categoryName !== selectedCategory) return false;
             if (selectedGender !== 'ALL' && p.gender !== selectedGender) return false;
             if (saleOnly && !p.discounted) return false;
@@ -94,13 +98,12 @@ export default function ShopPage() {
 
     const updateParam = (key, value, defaultVal) => {
         const next = new URLSearchParams(searchParams);
-        if (value === defaultVal) next.delete(key);
+        if (value === defaultVal || value === '' || value == null) next.delete(key);
         else next.set(key, value);
         setSearchParams(next, { replace: true });
     };
 
     const handleCategoryChange = (v) => { setSelectedCategory(v); updateParam('category', v, 'ALL'); };
-    const handleGenderChange = (v) => { setSelectedGender(v); updateParam('gender', v, 'ALL'); };
     const handleSortChange = (v) => { setSortBy(v); updateParam('sort', v, 'newest'); };
     const handleSaleToggle = () => {
         const next = !saleOnly;
@@ -124,41 +127,44 @@ export default function ShopPage() {
         setSearchParams({}, { replace: true });
     };
 
+    const pageTitle = selectedCategory !== 'ALL' ? selectedCategory : 'All shoes';
+
     return (
         <div className="shop-page">
             <div className="page-header fade-in-up">
-                <h1>Shop All</h1>
-                <p>{loading ? 'Loading...' : `${filtered.length} product${filtered.length !== 1 ? 's' : ''}`}</p>
+                <h1>{pageTitle}</h1>
+                <p>
+                    {loading
+                        ? 'Loading…'
+                        : `${filtered.length} ${filtered.length === 1 ? 'style' : 'styles'}`}
+                </p>
             </div>
 
-            {/* Filters bar */}
             <div className="shop-toolbar fade-in-up" style={{ animationDelay: '0.05s' }}>
                 <div className="shop-filters">
-                    <input
-                        type="search"
-                        className="store-input"
-                        placeholder="Search products…"
-                        value={query}
-                        onChange={(e) => handleSearch(e.target.value)}
-                        style={{ maxWidth: 240 }}
-                    />
-                    <select className="store-select" value={selectedCategory} onChange={(e) => handleCategoryChange(e.target.value)}>
-                        <option value="ALL">All categories</option>
-                        {categories.map((c) => (
-                            <option key={c.id} value={c.name}>{c.name}</option>
-                        ))}
-                    </select>
-                    <select className="store-select" value={selectedGender} onChange={(e) => handleGenderChange(e.target.value)}>
-                        <option value="ALL">All genders</option>
-                        <option value="MALE">Men</option>
-                        <option value="FEMALE">Women</option>
-                    </select>
                     <button
                         type="button"
-                        className={`filter-chip ${saleOnly ? 'active' : ''}`}
+                        className={`filter-chip${selectedCategory === 'ALL' && !saleOnly ? ' active' : ''}`}
+                        onClick={() => handleCategoryChange('ALL')}
+                    >
+                        All
+                    </button>
+                    {categories.map((c) => (
+                        <button
+                            key={c.id}
+                            type="button"
+                            className={`filter-chip${selectedCategory === c.name ? ' active' : ''}`}
+                            onClick={() => handleCategoryChange(c.name)}
+                        >
+                            {c.name}
+                        </button>
+                    ))}
+                    <button
+                        type="button"
+                        className={`filter-chip${saleOnly ? ' active' : ''}`}
                         onClick={handleSaleToggle}
                     >
-                        🏷️ On sale
+                        On sale
                     </button>
                     {activeFilterCount > 0 && (
                         <button type="button" className="filter-clear" onClick={clearFilters}>
@@ -166,32 +172,54 @@ export default function ShopPage() {
                         </button>
                     )}
                 </div>
-                <select className="store-select sort-select" value={sortBy} onChange={(e) => handleSortChange(e.target.value)}>
-                    {SORT_OPTIONS.map((opt) => (
-                        <option key={opt.value} value={opt.value}>{opt.label}</option>
-                    ))}
-                </select>
+                <div className="shop-right" style={{ display: 'flex', gap: '0.5rem', marginLeft: 'auto' }}>
+                    <input
+                        type="search"
+                        className="store-input"
+                        placeholder="Search…"
+                        value={query}
+                        onChange={(e) => handleSearch(e.target.value)}
+                        style={{ width: 180 }}
+                    />
+                    <select
+                        className="store-select sort-select"
+                        value={sortBy}
+                        onChange={(e) => handleSortChange(e.target.value)}
+                    >
+                        {SORT_OPTIONS.map((opt) => (
+                            <option key={opt.value} value={opt.value}>{opt.label}</option>
+                        ))}
+                    </select>
+                </div>
             </div>
 
-            {/* Products */}
             {loading ? (
                 <div className="storefront-grid">
                     {Array.from({ length: 8 }).map((_, i) => <SkeletonCard key={i} />)}
                 </div>
             ) : filtered.length === 0 ? (
                 <div className="store-empty">
-                    <span style={{ fontSize: '2.5rem', display: 'block', marginBottom: '0.5rem' }}>🔍</span>
-                    <p>No products match your filters.</p>
+                    No styles match your filters.
                     {activeFilterCount > 0 && (
-                        <button className="store-button outline" onClick={clearFilters} style={{ marginTop: '0.75rem' }}>
-                            Clear filters
-                        </button>
+                        <div>
+                            <button
+                                className="store-button outline"
+                                onClick={clearFilters}
+                                style={{ marginTop: '1rem' }}
+                            >
+                                Clear filters
+                            </button>
+                        </div>
                     )}
                 </div>
             ) : (
                 <div className="storefront-grid">
                     {filtered.map((product, i) => (
-                        <div key={product.id} className="fade-in-up" style={{ animationDelay: `${Math.min(i * 0.03, 0.3)}s` }}>
+                        <div
+                            key={product.id}
+                            className="fade-in-up"
+                            style={{ animationDelay: `${Math.min(i * 0.03, 0.3)}s` }}
+                        >
                             <StoreProductCard product={product} />
                         </div>
                     ))}

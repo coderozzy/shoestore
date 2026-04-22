@@ -9,6 +9,7 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
@@ -35,6 +36,22 @@ public class GlobalExceptionHandler {
         return ResponseEntity
                 .status(HttpStatus.BAD_REQUEST)
                 .body(ApiErrorResponse.of(400, ex.getMessage(), request.getRequestURI()));
+    }
+
+    /**
+     * A required {@code @RequestParam} that the client forgot to send.
+     * Without this handler the catch-all below would convert it to a
+     * generic 500 — wrong shape, leaks no useful signal to the caller.
+     */
+    @ExceptionHandler(MissingServletRequestParameterException.class)
+    public ResponseEntity<ApiErrorResponse> handleMissingParam(
+            MissingServletRequestParameterException ex, HttpServletRequest request) {
+        log.warn("Missing request parameter: {}", ex.getMessage());
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .body(ApiErrorResponse.of(400,
+                        "Missing required parameter: " + ex.getParameterName(),
+                        request.getRequestURI()));
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)

@@ -54,17 +54,6 @@ public class ProductService {
         return productMapper.toDTO(product);
     }
 
-    public ProductDTO getProductByQrCode(UUID qrCodeValue) {
-        Product product = productRepository.findByQrCodeValue(qrCodeValue)
-                .orElseThrow(() -> new ResourceNotFoundException("Product", "qrCode", qrCodeValue));
-        log.info("Product found by QR code: {} - {}", qrCodeValue, product.getModelName());
-        return productMapper.toDTO(product);
-    }
-
-    public List<ProductDTO> getProductsByGender(Gender gender) {
-        return productMapper.toDTOList(productRepository.findByGender(gender));
-    }
-
     public List<ProductDTO> getLowStockProducts() {
         return productMapper.toDTOList(productRepository.findLowStockProducts(5));
     }

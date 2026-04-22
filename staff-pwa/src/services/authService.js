@@ -30,7 +30,7 @@ function clearCachedUser() {
 // JWT is delivered and carried by an HttpOnly cookie set at /api/auth/login.
 // The staff PWA never sees the raw token — prevents the XSS-to-token-theft
 // chain (C-7).
-export const authService = {
+const authService = {
     async login(username, password) {
         const response = await api.post('/auth/login', { username, password });
         const { username: user, role } = response.data;
@@ -70,10 +70,6 @@ export const authService = {
 
     getUser() {
         return readCachedUser();
-    },
-
-    isAuthenticated() {
-        return !!readCachedUser();
     }
 };
 

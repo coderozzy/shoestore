@@ -8,7 +8,6 @@ import CartPage from './pages/CartPage.jsx';
 import CheckoutPage from './pages/CheckoutPage.jsx';
 import OrderConfirmationPage from './pages/OrderConfirmationPage.jsx';
 import TrackOrderPage from './pages/TrackOrderPage.jsx';
-import AboutPage from './pages/AboutPage.jsx';
 import ContactPage from './pages/ContactPage.jsx';
 
 export default function App() {
@@ -23,7 +22,6 @@ export default function App() {
                 <Route path="checkout" element={<CheckoutPage />} />
                 <Route path="order/:orderId" element={<OrderConfirmationPage />} />
                 <Route path="track" element={<TrackOrderPage />} />
-                <Route path="about" element={<AboutPage />} />
                 <Route path="contact" element={<ContactPage />} />
                 <Route path="*" element={<Navigate to="/" replace />} />
             </Route>

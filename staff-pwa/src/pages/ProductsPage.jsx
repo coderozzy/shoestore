@@ -176,26 +176,6 @@ export default function ProductsPage() {
         });
     };
 
-    const handleDelete = async (productId) => {
-        if (!window.confirm('Are you sure you want to permanently delete this product and its QR code?')) {
-            return;
-        }
-        try {
-            await productService.deleteProduct(productId);
-            setProducts((prev) => prev.filter((p) => p.id !== productId));
-        } catch (err) {
-            alert(err.response?.data?.message || 'Product could not be deleted');
-        }
-    };
-
-    const handleDeleteClick = (productId) => {
-        if (userRole !== 'ADMIN') {
-            alert('You are not authorized to perform this action!');
-            return;
-        }
-        handleDelete(productId);
-    };
-
     if (loading) {
         return (
             <div className="products-page">
@@ -235,7 +215,7 @@ export default function ProductsPage() {
                         </div>
                         <div className="qr-modal-actions">
                             <button className="btn btn-secondary" onClick={handlePrintQr}>
-                                🖨️ Print
+                                Print label
                             </button>
                             <button className="btn btn-primary" onClick={handleCloseQrModal}>
                                 Close
@@ -336,12 +316,12 @@ export default function ProductsPage() {
 
             <div className="products-header">
                 <div className="header-actions">
-                    <h1>📦 Products</h1>
-                    <button className="btn btn-primary" onClick={() => navigate('/')}>
-                        📸 Scan QR
+                    <h1>Products</h1>
+                    <button className="btn btn-primary btn-sm" onClick={() => navigate('/')}>
+                        Scan QR
                     </button>
                 </div>
-                <p>{filteredProducts.length} products found</p>
+                <p>{filteredProducts.length} {filteredProducts.length === 1 ? 'item' : 'items'} in catalog</p>
             </div>
 
             <div className="products-filters">
@@ -371,7 +351,6 @@ export default function ProductsPage() {
                             showQrAction={true}
                             onShowQr={handleShowQr}
                             onSell={() => openActionModal(product)}
-                            onDelete={handleDeleteClick}
                         />
                     ))}
                 </div>

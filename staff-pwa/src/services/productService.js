@@ -1,6 +1,6 @@
 import api from './api';
 
-export const productService = {
+const productService = {
     async getAllProducts() {
         const response = await api.get('/products');
         return response.data;
@@ -14,10 +14,6 @@ export const productService = {
     async createProduct(productData) {
         const response = await api.post('/products', productData);
         return response.data;
-    },
-
-    async deleteProduct(id) {
-        await api.delete(`/products/${id}`);
     },
 
     async sellProduct(id, size, quantity = 1) {

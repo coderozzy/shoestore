@@ -1,6 +1,6 @@
-import { useState } from 'react';
-import { Link } from 'react-router-dom';
-import storefrontService, { getStoredOrderToken } from '../services/storefrontService.js';
+import { useEffect, useState } from 'react';
+import { Link, useSearchParams } from 'react-router-dom';
+import storefrontService, { getStoredOrderTokenByNumber } from '../services/storefrontService.js';
 
 const formatPrice = (v) => `₺${(Number(v) || 0).toFixed(2)}`;
 
@@ -11,35 +11,74 @@ const STATUS_INFO = {
     CANCELLED: { icon: '❌', label: 'Cancelled', color: '#e03131', step: 0 }
 };
 
+/**
+ * Normalises whatever the customer pasted into the order-number input.
+ * Accepts "stp a7k9p3m2" / "stp-a7k9p3m2" / "STPA7K9P3M2" / "  STP-A7K9P3M2  "
+ * and lands on the canonical form. The backend is strict; the form is
+ * forgiving.
+ */
+function normaliseOrderNumber(raw) {
+    if (!raw) return '';
+    const cleaned = raw.trim().toUpperCase().replace(/\s+/g, '');
+    if (!cleaned) return '';
+    if (cleaned.startsWith('STP-')) return cleaned;
+    if (cleaned.startsWith('STP')) return 'STP-' + cleaned.slice(3);
+    return 'STP-' + cleaned;
+}
+
 export default function TrackOrderPage() {
-    const [orderId, setOrderId] = useState('');
+    const [searchParams] = useSearchParams();
+    const [orderNumber, setOrderNumber] = useState('');
     const [token, setToken] = useState('');
     const [order, setOrder] = useState(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
 
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-        const id = orderId.trim().replace('#', '');
-        if (!id) return;
-        const lookupToken = token.trim() || getStoredOrderToken(id);
-        if (!lookupToken) {
-            setError('Order tracking requires the secure link we emailed you. Please open it from your inbox.');
-            return;
+    // Magic-link auto-lookup. The confirmation email contains a URL of the
+    // shape /track?orderNumber=...&token=...; if both query params are
+    // present, fire the lookup immediately so the customer doesn't have
+    // to retype anything.
+    useEffect(() => {
+        const qpNumber = searchParams.get('orderNumber');
+        const qpToken = searchParams.get('token');
+        if (qpNumber && qpToken) {
+            const canonical = normaliseOrderNumber(qpNumber);
+            setOrderNumber(canonical);
+            setToken(qpToken);
+            performLookup(canonical, qpToken);
         }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
+    const performLookup = async (canonicalNumber, lookupToken) => {
         setLoading(true);
         setError('');
         setOrder(null);
         try {
-            const data = await storefrontService.getOrder(id, lookupToken);
+            const data = await storefrontService.getOrderByNumber(canonicalNumber, lookupToken);
             setOrder(data);
         } catch (err) {
-            setError(err.response?.status === 400
-                ? 'That order number or token is not valid.'
-                : 'Unable to look up this order right now.');
+            setError(err.response?.status === 404
+                ? 'No order found with that number.'
+                : err.response?.status === 400
+                    ? 'That tracking token is not valid for this order.'
+                    : 'Unable to look up this order right now.');
         } finally {
             setLoading(false);
         }
+    };
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        const canonical = normaliseOrderNumber(orderNumber);
+        if (!canonical) return;
+        setOrderNumber(canonical);
+        const lookupToken = token.trim() || getStoredOrderTokenByNumber(canonical);
+        if (!lookupToken) {
+            setError('Order tracking requires the secure link we emailed you. Please open it from your inbox, or paste the token from the email.');
+            return;
+        }
+        performLookup(canonical, lookupToken);
     };
 
     const status = order ? (STATUS_INFO[order.status] || STATUS_INFO.PENDING) : null;
@@ -49,23 +88,27 @@ export default function TrackOrderPage() {
         <div className="track-page">
             <div className="page-header fade-in-up">
                 <h1>Track Your Order</h1>
-                <p>Open the confirmation link we emailed you, or paste your order number and token below.</p>
+                <p>Open the confirmation link we emailed you, or paste your order number and tracking token below.</p>
             </div>
 
             <form onSubmit={handleSubmit} className="track-form fade-in-up" style={{ animationDelay: '0.05s' }}>
                 <input
                     className="store-input"
-                    placeholder="Order number"
-                    value={orderId}
-                    onChange={(e) => setOrderId(e.target.value)}
+                    placeholder="Order number (STP-XXXXXXXX)"
+                    value={orderNumber}
+                    onChange={(e) => setOrderNumber(e.target.value)}
                     required
-                    style={{ flex: 1, maxWidth: 200 }}
+                    autoComplete="off"
+                    spellCheck={false}
+                    style={{ flex: 1, maxWidth: 240 }}
                 />
                 <input
                     className="store-input"
                     placeholder="Tracking token (from your email)"
                     value={token}
                     onChange={(e) => setToken(e.target.value)}
+                    autoComplete="off"
+                    spellCheck={false}
                     style={{ flex: 2, maxWidth: 400 }}
                 />
                 <button type="submit" className="store-button" disabled={loading}>
@@ -80,7 +123,7 @@ export default function TrackOrderPage() {
                     <div className="track-status-card" style={{ borderColor: status.color }}>
                         <span style={{ fontSize: '2rem' }}>{status.icon}</span>
                         <div>
-                            <h2>Order #{order.id}</h2>
+                            <h2>{order.orderNumber || `Order #${order.id}`}</h2>
                             <span className="track-status-label" style={{ color: status.color }}>
                                 {status.label}
                             </span>

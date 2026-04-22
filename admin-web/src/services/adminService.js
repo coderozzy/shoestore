@@ -4,7 +4,7 @@ const formatLocalDateTime = (date) => {
     return date.toISOString().slice(0, 19);
 };
 
-export const adminService = {
+const adminService = {
     async getOrders() {
         const response = await api.get('/admin/orders');
         return response.data;
@@ -81,6 +81,15 @@ export const adminService = {
     async getCategories() {
         const response = await api.get('/categories');
         return response.data;
+    },
+
+    async createCategory(payload) {
+        const response = await api.post('/admin/categories', payload);
+        return response.data;
+    },
+
+    async deleteCategory(id) {
+        await api.delete(`/admin/categories/${id}`);
     },
 
     // Direct <img src> still works because the HttpOnly auth cookie is attached

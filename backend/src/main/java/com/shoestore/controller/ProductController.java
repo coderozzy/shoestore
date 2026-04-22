@@ -5,7 +5,6 @@ import com.shoestore.dto.CreateProductRequest;
 import com.shoestore.dto.ProductDTO;
 import com.shoestore.dto.UpdateProductRequest;
 import com.shoestore.entity.Product;
-import com.shoestore.enums.Gender;
 import com.shoestore.service.ProductService;
 import com.shoestore.service.QrCodeService;
 import com.shoestore.service.ScanHistoryService;
@@ -36,21 +35,11 @@ public class ProductController {
         return ResponseEntity.ok(productService.getAllProducts());
     }
 
-    @GetMapping("/{id:[0-9]+}")
-    public ResponseEntity<ProductDTO> getProductById(@PathVariable Long id) {
-        return ResponseEntity.ok(productService.getProductById(id));
-    }
-
     @GetMapping("/qr/{qrCode}")
     public ResponseEntity<ProductDTO> getProductByQrCode(@PathVariable UUID qrCode) {
         Product product = productService.getProductEntityByQrCode(qrCode);
         scanHistoryService.recordScan(product, "SCAN");
         return ResponseEntity.ok(productService.toDTO(product));
-    }
-
-    @GetMapping("/gender/{gender}")
-    public ResponseEntity<List<ProductDTO>> getProductsByGender(@PathVariable Gender gender) {
-        return ResponseEntity.ok(productService.getProductsByGender(gender));
     }
 
     @GetMapping("/low-stock")

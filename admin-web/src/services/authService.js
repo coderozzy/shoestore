@@ -30,7 +30,7 @@ function clearCachedUser() {
     }
 }
 
-export const authService = {
+const authService = {
     async login(username, password) {
         const response = await api.post('/auth/login', { username, password });
         const { username: user, role } = response.data;
@@ -58,14 +58,6 @@ export const authService = {
             clearCachedUser();
             return null;
         }
-    },
-
-    getUser() {
-        return readCachedUser();
-    },
-
-    isAuthenticated() {
-        return !!readCachedUser();
     }
 };
 

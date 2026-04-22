@@ -1,28 +1,65 @@
-/* ===== CSS Variables & Reset ===== */
+/* ==========================================================================
+   Steps — Admin portal
+   Warm cream + full-grain leather brown palette to match the storefront.
+   Class names are preserved verbatim from the existing admin pages so JSX
+   does not need to change in lockstep with this file.
+   ========================================================================== */
+
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&display=swap');
+
 :root {
-    --bg-primary: #0f172a;
-    --bg-secondary: #1e293b;
-    --bg-card: #1e293b;
-    --bg-card-hover: #263548;
-    --bg-input: #0f172a;
-    --border-color: rgba(148, 163, 184, 0.12);
-    --border-hover: rgba(148, 163, 184, 0.25);
-    --text-primary: #f1f5f9;
-    --text-secondary: #94a3b8;
-    --text-muted: #64748b;
-    --accent: #667eea;
-    --accent-hover: #5a6fd6;
-    --accent-glow: rgba(102, 126, 234, 0.25);
-    --success: #34d399;
-    --warning: #fbbf24;
-    --danger: #f87171;
-    --info: #38bdf8;
-    --radius: 12px;
-    --radius-sm: 8px;
-    --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3);
-    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.4);
-    --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.5);
-    --transition: all 0.2s ease;
+    /* Surfaces */
+    --bg-primary: #f4ece2;
+    --bg-secondary: #ede4d8;
+    --bg-card: #ffffff;
+    --bg-card-hover: #faf5ec;
+    --bg-input: #ffffff;
+    --surface-alt: #ede4d8;
+
+    /* Lines */
+    --border-color: #d8cfc2;
+    --border-hover: #b9ad9c;
+
+    /* Text */
+    --text-primary: #1c1510;
+    --text-secondary: #6a5b4e;
+    --text-muted: #9c8c7c;
+
+    /* Brand */
+    --accent: #7a4c2c;
+    --accent-hover: #5e3820;
+    --accent-glow: rgba(122, 76, 44, 0.18);
+    --accent-fg: #ffffff;
+
+    /* Status */
+    --success: #2a5e2a;
+    --success-bg: #ecf5ec;
+    --warning: #7a5010;
+    --warning-bg: #fef6e8;
+    --danger: #8b2020;
+    --danger-bg: #f8ecec;
+    --info: #1e3a6e;
+    --info-bg: #eef2fa;
+
+    /* Sidebar */
+    --sb: #1c1510;
+    --sb-on: #f4ece2;
+    --sb-t: rgba(244, 236, 226, 0.55);
+    --sb-hover: rgba(244, 236, 226, 0.07);
+    --sb-border: rgba(244, 236, 226, 0.10);
+    --sb-w: 224px;
+
+    /* Shape + motion */
+    --radius: 8px;
+    --radius-sm: 3px;
+    --shadow-sm: 0 1px 3px rgba(28, 21, 16, 0.06);
+    --shadow-md: 0 4px 16px rgba(28, 21, 16, 0.08);
+    --shadow-lg: 0 16px 48px rgba(28, 21, 16, 0.12);
+    --transition: all 0.15s ease;
+
+    /* Type */
+    --fd: 'Cormorant Garamond', Georgia, serif;
+    --fb: 'DM Sans', system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
 }
 
 *, *::before, *::after {
@@ -32,176 +69,372 @@
 }
 
 body {
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    font-family: var(--fb);
     background: var(--bg-primary);
     color: var(--text-primary);
+    font-size: 14px;
     line-height: 1.6;
     -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
 }
 
-/* ===== Shell Layout ===== */
+a { color: inherit; text-decoration: none; }
+
+/* ==========================================================================
+   Shell — sidebar + content
+   ========================================================================== */
 .admin-shell {
     min-height: 100vh;
     display: flex;
-    flex-direction: column;
+    align-items: stretch;
+    background: var(--bg-primary);
 }
 
+/* The existing JSX renders <nav class="admin-shell-nav"> as a top bar with
+   nav links, a spacer, the username and a logout button. We restyle it as
+   a sticky vertical sidebar; ".nav-spacer" with flex:1 still pushes the
+   trailing user/logout block to the bottom. */
 .admin-shell-nav {
+    width: var(--sb-w);
+    flex-shrink: 0;
+    background: var(--sb);
+    color: var(--sb-on);
     display: flex;
-    gap: 0.25rem;
-    align-items: center;
-    padding: 0.75rem 1.5rem;
-    background: var(--bg-secondary);
-    border-bottom: 1px solid var(--border-color);
+    flex-direction: column;
+    align-items: stretch;
+    gap: 1px;
+    padding: 1.25rem 0 1rem;
     position: sticky;
     top: 0;
-    z-index: 100;
-    backdrop-filter: blur(12px);
+    height: 100vh;
+    overflow: hidden;
+}
+
+/* Brand wordmark inserted at the top of the sidebar via ::before so we
+   don't have to add markup. */
+.admin-shell-nav::before {
+    content: 'Steps';
+    display: block;
+    font-family: var(--fd);
+    font-size: 1.4rem;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--sb-on);
+    padding: 0.25rem 1.25rem 0.1rem;
+}
+
+.admin-shell-nav::after {
+    content: 'Admin portal';
+    display: block;
+    font-size: 0.68rem;
+    color: var(--sb-t);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 0 1.25rem 1rem;
+    border-bottom: 1px solid var(--sb-border);
+    margin-bottom: 0.75rem;
 }
 
 .admin-shell-nav a {
-    color: var(--text-secondary);
-    text-decoration: none;
-    font-weight: 600;
-    font-size: 0.875rem;
-    padding: 0.5rem 1rem;
-    border-radius: var(--radius-sm);
-    transition: var(--transition);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.58rem 1.25rem;
+    font-size: 0.84rem;
+    font-weight: 400;
+    letter-spacing: 0.01em;
+    color: var(--sb-t);
+    background: transparent;
+    border-radius: 0;
+    transition: color 0.12s, background 0.12s;
+    white-space: nowrap;
 }
 
 .admin-shell-nav a:hover {
-    color: var(--text-primary);
-    background: rgba(255, 255, 255, 0.05);
+    color: var(--sb-on);
+    background: var(--sb-hover);
 }
 
 .admin-shell-nav a.active {
-    color: var(--accent);
-    background: var(--accent-glow);
+    color: var(--sb-on);
+    background: var(--sb-hover);
+    font-weight: 500;
 }
 
-.admin-shell-nav .nav-spacer { flex: 1; }
+.admin-shell-nav .nav-spacer {
+    flex: 1;
+    min-height: 0.75rem;
+}
 
-/* ===== Buttons ===== */
+.admin-shell-nav > span {
+    padding: 0 1.25rem 0.4rem !important;
+    color: var(--sb-t) !important;
+    font-size: 0.78rem !important;
+    letter-spacing: 0.02em;
+    border-top: 1px solid var(--sb-border);
+    padding-top: 1rem !important;
+}
+
+.admin-shell-nav .btn {
+    margin: 0 1.25rem;
+    background: transparent;
+    border: 1px solid var(--sb-border);
+    color: var(--sb-t);
+    padding: 0.45rem 0.8rem;
+    border-radius: var(--radius-sm);
+    font-size: 0.78rem;
+    font-weight: 500;
+    width: auto;
+    align-self: flex-start;
+}
+
+.admin-shell-nav .btn:hover {
+    background: var(--sb-hover);
+    color: var(--sb-on);
+    border-color: var(--sb-border);
+    transform: none;
+    box-shadow: none;
+}
+
+.admin-shell > :not(.admin-shell-nav) {
+    flex: 1;
+    min-width: 0;
+    overflow-x: hidden;
+}
+
+/* ==========================================================================
+   Page section + headers
+   ========================================================================== */
+.admin-page-section {
+    padding: 2rem 2.5rem;
+    max-width: 1400px;
+    margin: 0 auto;
+    width: 100%;
+}
+
+.section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    margin-bottom: 1.75rem;
+    padding-bottom: 1.25rem;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.section-header h2 {
+    font-family: var(--fd);
+    font-size: 1.9rem;
+    font-weight: 400;
+    letter-spacing: -0.01em;
+    color: var(--text-primary);
+}
+
+/* ==========================================================================
+   Buttons
+   ========================================================================== */
 .btn {
     display: inline-flex;
     align-items: center;
-    gap: 0.5rem;
-    padding: 0.55rem 1.15rem;
-    font-size: 0.85rem;
-    font-weight: 600;
-    border: none;
+    justify-content: center;
+    gap: 0.4rem;
+    padding: 0.52rem 1.1rem;
+    font-family: var(--fb);
+    font-size: 0.82rem;
+    font-weight: 500;
+    border: 1px solid transparent;
     border-radius: var(--radius-sm);
     cursor: pointer;
     transition: var(--transition);
     white-space: nowrap;
+    letter-spacing: 0.02em;
 }
 
 .btn-primary {
-    background: linear-gradient(135deg, var(--accent), #764ba2);
-    color: #fff;
-    box-shadow: 0 2px 8px var(--accent-glow);
+    background: var(--accent);
+    color: var(--accent-fg);
+    border-color: var(--accent);
 }
 
 .btn-primary:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 4px 16px var(--accent-glow);
+    background: var(--accent-hover);
+    border-color: var(--accent-hover);
 }
 
 .btn-primary:disabled {
-    opacity: 0.5;
-    transform: none;
+    opacity: 0.45;
     cursor: not-allowed;
 }
 
 .btn-secondary {
-    background: rgba(255, 255, 255, 0.08);
-    color: var(--text-secondary);
-    border: 1px solid var(--border-color);
+    background: transparent;
+    color: var(--text-primary);
+    border-color: var(--border-color);
 }
 
 .btn-secondary:hover {
-    background: rgba(255, 255, 255, 0.12);
-    color: var(--text-primary);
+    background: var(--surface-alt);
+    border-color: var(--border-hover);
 }
 
 .btn-danger {
-    background: rgba(248, 113, 113, 0.15);
+    background: transparent;
     color: var(--danger);
-    border: 1px solid rgba(248, 113, 113, 0.3);
+    border-color: rgba(139, 32, 32, 0.25);
 }
 
-.btn-danger:hover { background: rgba(248, 113, 113, 0.25); }
-.btn-sm { padding: 0.35rem 0.75rem; font-size: 0.8rem; }
+.btn-danger:hover {
+    background: var(--danger-bg);
+    border-color: var(--danger);
+}
 
-/* ===== Login Page ===== */
+.btn-danger:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+    background: transparent;
+}
+
+.btn-sm {
+    padding: 0.32rem 0.7rem;
+    font-size: 0.76rem;
+}
+
+/* ==========================================================================
+   Login page
+   ========================================================================== */
 .admin-login-page {
     min-height: 100vh;
     display: flex;
     align-items: center;
     justify-content: center;
     padding: 2rem;
-    background: radial-gradient(ellipse at top, #1e293b 0%, #0f172a 60%);
+    background: var(--bg-primary);
 }
 
 .admin-card {
-    width: min(440px, 100%);
+    width: min(400px, 100%);
     background: var(--bg-card);
+    border: 1px solid var(--border-color);
     border-radius: var(--radius);
     padding: 2.5rem;
-    border: 1px solid var(--border-color);
-    box-shadow: var(--shadow-lg);
+    box-shadow: 0 8px 32px rgba(28, 21, 16, 0.07);
 }
 
 .admin-card h1 {
-    font-size: 1.75rem;
-    margin-bottom: 0.5rem;
-    background: linear-gradient(135deg, var(--accent), #f093fb);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
+    font-family: var(--fd);
+    font-size: 2rem;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-bottom: 0.2rem;
+    color: var(--text-primary);
+    background: none;
+    -webkit-text-fill-color: initial;
 }
 
 .admin-card p {
     color: var(--text-secondary);
-    margin-bottom: 1.5rem;
+    font-size: 0.83rem;
+    line-height: 1.5;
+    margin-bottom: 2rem;
 }
 
-/* ===== Forms ===== */
-.product-form { display: flex; flex-direction: column; gap: 1rem; }
-.form-row { display: flex; gap: 1rem; }
-.form-row > * { flex: 1; }
-.form-group { display: flex; flex-direction: column; gap: 0.35rem; }
+/* ==========================================================================
+   Forms
+   ========================================================================== */
+.product-form {
+    display: flex;
+    flex-direction: column;
+    gap: 0.85rem;
+}
+
+.form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+}
+
+.form-row > * { min-width: 0; }
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.32rem;
+}
 
 .label {
-    font-size: 0.8rem;
-    font-weight: 600;
+    font-size: 0.7rem;
+    font-weight: 700;
     color: var(--text-secondary);
     text-transform: uppercase;
-    letter-spacing: 0.05em;
+    letter-spacing: 0.08em;
 }
 
-.input, select.input {
-    padding: 0.65rem 0.85rem;
+.input,
+select.input {
+    padding: 0.5rem 0.72rem;
     background: var(--bg-input);
     border: 1px solid var(--border-color);
     border-radius: var(--radius-sm);
     color: var(--text-primary);
-    font-size: 0.9rem;
-    transition: var(--transition);
+    font-family: var(--fb);
+    font-size: 0.84rem;
+    transition: border-color 0.12s, box-shadow 0.12s;
     outline: none;
+    width: 100%;
 }
 
-.input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-glow); }
-.input::placeholder { color: var(--text-muted); }
+.input:focus {
+    border-color: var(--text-primary);
+    box-shadow: none;
+}
 
-/* ===== Alert ===== */
-.alert { padding: 0.75rem 1rem; border-radius: var(--radius-sm); font-size: 0.85rem; }
-.alert-error { background: rgba(248, 113, 113, 0.12); color: var(--danger); border: 1px solid rgba(248, 113, 113, 0.25); }
+.input::placeholder {
+    color: var(--text-muted);
+}
 
-/* ===== Modals ===== */
+select.input {
+    appearance: none;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'><path d='M1 1l5 5 5-5' fill='none' stroke='%236a5b4e' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/></svg>");
+    background-repeat: no-repeat;
+    background-position: right 0.65rem center;
+    padding-right: 2rem;
+}
+
+.form-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.5rem;
+    margin-top: 0.75rem;
+    padding-top: 0.75rem;
+    border-top: 1px solid var(--border-color);
+}
+
+/* ==========================================================================
+   Alerts
+   ========================================================================== */
+.alert {
+    padding: 0.55rem 0.85rem;
+    border-radius: var(--radius-sm);
+    font-size: 0.8rem;
+    border: 1px solid transparent;
+}
+
+.alert-error {
+    background: var(--danger-bg);
+    color: var(--danger);
+    border-color: rgba(139, 32, 32, 0.18);
+}
+
+/* ==========================================================================
+   Modals
+   ========================================================================== */
 .modal-overlay {
     position: fixed;
     inset: 0;
-    background: rgba(2, 6, 23, 0.72);
+    background: rgba(28, 21, 16, 0.45);
     backdrop-filter: blur(4px);
     display: flex;
     align-items: center;
@@ -218,7 +451,7 @@ body {
     border: 1px solid var(--border-color);
     border-radius: var(--radius);
     box-shadow: var(--shadow-lg);
-    padding: 1.25rem;
+    padding: 1.5rem;
 }
 
 .modal-header {
@@ -226,115 +459,106 @@ body {
     align-items: center;
     justify-content: space-between;
     gap: 1rem;
-    margin-bottom: 1rem;
+    margin-bottom: 1.25rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--border-color);
 }
 
 .modal-header h2 {
-    font-size: 1.1rem;
-    font-weight: 700;
+    font-family: var(--fd);
+    font-size: 1.3rem;
+    font-weight: 400;
+    color: var(--text-primary);
 }
 
 .modal-close {
-    width: 34px;
-    height: 34px;
+    width: 28px;
+    height: 28px;
+    background: none;
     border: 1px solid var(--border-color);
-    background: rgba(255, 255, 255, 0.04);
-    color: var(--text-primary);
-    border-radius: 999px;
+    border-radius: var(--radius-sm);
     cursor: pointer;
-    font-size: 1.1rem;
+    color: var(--text-primary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.95rem;
     line-height: 1;
+    transition: background 0.12s;
 }
 
 .modal-close:hover {
-    background: rgba(255, 255, 255, 0.1);
+    background: var(--surface-alt);
 }
 
-.form-actions {
-    display: flex;
-    justify-content: flex-end;
-    gap: 0.75rem;
-    margin-top: 1rem;
-}
-
-/* ===== Page Section ===== */
-.admin-page-section {
-    padding: 1.5rem;
-    max-width: 1400px;
-    margin: 0 auto;
-    width: 100%;
-}
-
-.section-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 1.25rem;
-    flex-wrap: wrap;
-    gap: 0.75rem;
-}
-
-.section-header h2 {
-    font-size: 1.35rem;
-    font-weight: 700;
-}
-
-/* ===== Stats Grid ===== */
+/* ==========================================================================
+   Stats cards
+   ========================================================================== */
 .stats-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
     gap: 1rem;
-    margin-bottom: 1.5rem;
+    margin-bottom: 1.25rem;
 }
 
 .stat-card {
     background: var(--bg-card);
     border: 1px solid var(--border-color);
     border-radius: var(--radius);
-    padding: 1.25rem;
+    padding: 1.25rem 1.4rem;
     display: flex;
     align-items: center;
     gap: 1rem;
     transition: var(--transition);
 }
 
-.stat-card:hover { border-color: var(--border-hover); transform: translateY(-2px); box-shadow: var(--shadow-md); }
-
-.stat-icon {
-    width: 48px;
-    height: 48px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 1.5rem;
-    border-radius: var(--radius-sm);
-    flex-shrink: 0;
+.stat-card:hover {
+    border-color: var(--border-hover);
 }
 
-.stat-icon.blue { background: rgba(102, 126, 234, 0.15); }
-.stat-icon.green { background: rgba(52, 211, 153, 0.15); }
-.stat-icon.yellow { background: rgba(251, 191, 36, 0.15); }
-.stat-icon.purple { background: rgba(168, 85, 247, 0.15); }
-.stat-icon.red { background: rgba(248, 113, 113, 0.15); }
+/* JSX still emits <div className="stat-icon green">📈</div>. The new design
+   has no card icons; we collapse them visually but keep the markup intact. */
+.stat-icon {
+    display: none;
+}
 
-.stat-content { display: flex; flex-direction: column; }
-.stat-value { font-size: 1.5rem; font-weight: 700; line-height: 1.2; }
-.stat-label { font-size: 0.8rem; color: var(--text-secondary); }
+.stat-content {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+}
 
-/* ===== Chart Section ===== */
+.stat-value {
+    font-size: 1.55rem;
+    font-weight: 600;
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+    color: var(--text-primary);
+}
+
+.stat-label {
+    font-size: 0.74rem;
+    color: var(--text-secondary);
+}
+
+/* ==========================================================================
+   Cards (charts, low-stock, etc.)
+   ========================================================================== */
 .chart-card {
     background: var(--bg-card);
     border: 1px solid var(--border-color);
     border-radius: var(--radius);
     padding: 1.5rem;
-    margin-bottom: 1.5rem;
+    margin-bottom: 1.25rem;
 }
 
 .chart-card h3 {
-    font-size: 1rem;
+    font-size: 0.72rem;
     font-weight: 700;
-    margin-bottom: 1rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
     color: var(--text-secondary);
+    margin-bottom: 1.25rem;
 }
 
 .chart-empty {
@@ -347,13 +571,17 @@ body {
     gap: 0.5rem;
 }
 
-.chart-empty .icon { font-size: 2.5rem; }
+.chart-empty .icon {
+    font-size: 2.5rem;
+}
 
-/* ===== Tables ===== */
+/* ==========================================================================
+   Tables
+   ========================================================================== */
 .admin-table-wrapper {
     overflow-x: auto;
-    border-radius: var(--radius);
     border: 1px solid var(--border-color);
+    border-radius: var(--radius);
     background: var(--bg-card);
 }
 
@@ -363,60 +591,91 @@ body {
 }
 
 .admin-table th {
-    padding: 0.8rem 1rem;
+    padding: 0.65rem 1rem;
     text-align: left;
-    font-size: 0.75rem;
+    font-size: 0.7rem;
     font-weight: 700;
     text-transform: uppercase;
-    letter-spacing: 0.05em;
-    color: var(--text-muted);
-    background: rgba(0, 0, 0, 0.15);
+    letter-spacing: 0.07em;
+    color: var(--text-secondary);
+    background: var(--surface-alt);
     border-bottom: 1px solid var(--border-color);
     white-space: nowrap;
 }
 
 .admin-table td {
-    padding: 0.75rem 1rem;
+    padding: 0.72rem 1rem;
     border-bottom: 1px solid var(--border-color);
-    font-size: 0.875rem;
+    font-size: 0.84rem;
     color: var(--text-secondary);
+    vertical-align: middle;
 }
 
-.admin-table tbody tr:last-child td { border-bottom: none; }
-.admin-table tbody tr:hover { background: rgba(255, 255, 255, 0.02); }
+.admin-table tbody tr:last-child td {
+    border-bottom: none;
+}
 
-.admin-table td.model-name { color: var(--text-primary); font-weight: 600; }
-.admin-table td.revenue { color: var(--success); font-weight: 600; }
-.admin-table td.rank-cell { font-size: 1.1rem; text-align: center; }
+.admin-table tbody tr:hover td {
+    background: color-mix(in srgb, var(--surface-alt) 45%, transparent);
+}
+
+.admin-table td.model-name {
+    color: var(--text-primary);
+    font-weight: 500;
+}
+
+.admin-table td.revenue {
+    color: var(--success);
+    font-weight: 600;
+}
+
+.admin-table td.low-stock {
+    color: var(--warning);
+    font-weight: 600;
+}
+
+.admin-table td.rank-cell {
+    font-size: 1.1rem;
+    text-align: center;
+}
 
 .admin-table tfoot td {
-    font-weight: 700;
-    background: rgba(0, 0, 0, 0.1);
+    font-weight: 600;
+    background: var(--surface-alt);
     color: var(--text-primary);
 }
 
-/* ===== Status Badges ===== */
+/* ==========================================================================
+   Status badges
+   ========================================================================== */
 .badge {
-    display: inline-block;
-    padding: 0.2rem 0.6rem;
+    display: inline-flex;
+    align-items: center;
+    padding: 0.18rem 0.55rem;
     border-radius: 99px;
-    font-size: 0.75rem;
+    font-size: 0.7rem;
     font-weight: 600;
+    letter-spacing: 0.03em;
     text-transform: uppercase;
+    white-space: nowrap;
 }
 
-.badge-pending { background: rgba(251, 191, 36, 0.15); color: var(--warning); }
-.badge-confirmed { background: rgba(56, 189, 248, 0.15); color: var(--info); }
-.badge-fulfilled { background: rgba(52, 211, 153, 0.15); color: var(--success); }
-.badge-cancelled { background: rgba(248, 113, 113, 0.15); color: var(--danger); }
-.badge-active { background: rgba(52, 211, 153, 0.15); color: var(--success); }
-.badge-inactive { background: rgba(248, 113, 113, 0.15); color: var(--danger); }
-.badge-in { background: rgba(52, 211, 153, 0.15); color: var(--success); }
-.badge-out { background: rgba(248, 113, 113, 0.15); color: var(--danger); }
-.badge-live { background: rgba(52, 211, 153, 0.15); color: var(--success); }
-.badge-draft { background: rgba(148, 163, 184, 0.15); color: var(--text-secondary); }
+.badge-pending   { background: var(--warning-bg); color: var(--warning); }
+.badge-confirmed { background: var(--info-bg);    color: var(--info); }
+.badge-paid      { background: var(--success-bg); color: var(--success); }
+.badge-fulfilled { background: var(--info-bg);    color: var(--info); }
+.badge-cancelled { background: var(--danger-bg);  color: var(--danger); }
+.badge-active    { background: var(--success-bg); color: var(--success); }
+.badge-inactive  { background: var(--surface-alt); color: var(--text-secondary); }
+.badge-in        { background: var(--success-bg); color: var(--success); }
+.badge-out       { background: var(--danger-bg);  color: var(--danger); }
+.badge-live      { background: var(--success-bg); color: var(--success); }
+.badge-draft     { background: var(--surface-alt); color: var(--text-secondary); }
+.badge-secondary { background: var(--surface-alt); color: var(--text-secondary); }
 
-/* ===== Low Stock Alerts ===== */
+/* ==========================================================================
+   Low-stock alerts
+   ========================================================================== */
 .low-stock-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
@@ -428,15 +687,24 @@ body {
     align-items: center;
     justify-content: space-between;
     padding: 0.85rem 1rem;
-    background: rgba(251, 191, 36, 0.06);
-    border: 1px solid rgba(251, 191, 36, 0.15);
+    background: var(--warning-bg);
+    border: 1px solid rgba(122, 80, 16, 0.18);
     border-radius: var(--radius-sm);
 }
 
-.low-stock-item .name { font-weight: 600; color: var(--text-primary); }
-.low-stock-item .stock { color: var(--warning); font-weight: 700; }
+.low-stock-item .name {
+    font-weight: 500;
+    color: var(--text-primary);
+}
 
-/* ===== Date Controls ===== */
+.low-stock-item .stock {
+    color: var(--warning);
+    font-weight: 700;
+}
+
+/* ==========================================================================
+   Date / search controls row
+   ========================================================================== */
 .controls-row {
     display: flex;
     gap: 0.5rem;
@@ -445,35 +713,39 @@ body {
 }
 
 .controls-row .input {
-    max-width: 160px;
+    max-width: 220px;
 }
 
-/* ===== Tooltip ===== */
+/* ==========================================================================
+   Recharts tooltip override (used by ChartTooltip in AdminApp.jsx)
+   ========================================================================== */
 .custom-tooltip {
-    background: var(--bg-secondary);
+    background: var(--bg-card);
     border: 1px solid var(--border-color);
     border-radius: var(--radius-sm);
-    padding: 0.75rem 1rem;
-    box-shadow: var(--shadow-lg);
+    padding: 0.6rem 0.85rem;
+    box-shadow: var(--shadow-md);
 }
 
-.custom-tooltip .t-title { font-weight: 700; color: var(--text-primary); margin-bottom: 0.35rem; }
-.custom-tooltip .t-detail { font-size: 0.8rem; color: var(--text-secondary); }
-.custom-tooltip .t-value { font-weight: 700; color: var(--success); }
-
-/* ===== Responsive ===== */
-@media (max-width: 768px) {
-    .form-row { flex-direction: column; }
-    .stats-grid { grid-template-columns: repeat(2, 1fr); }
-    .admin-page-section { padding: 1rem; }
-    .admin-shell-nav { flex-wrap: wrap; }
+.custom-tooltip .t-title {
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 0.3rem;
 }
 
-@media (max-width: 480px) {
-    .stats-grid { grid-template-columns: 1fr; }
+.custom-tooltip .t-detail {
+    font-size: 0.78rem;
+    color: var(--text-secondary);
 }
 
-/* ===== Products page extras ===== */
+.custom-tooltip .t-value {
+    font-weight: 700;
+    color: var(--success);
+}
+
+/* ==========================================================================
+   Products page extras
+   ========================================================================== */
 .row-actions {
     display: flex;
     gap: 0.4rem;
@@ -492,6 +764,7 @@ body {
     align-items: center;
     gap: 0.25rem;
     font-size: 0.85rem;
+    color: var(--text-secondary);
 }
 
 .size-input-item .input {
@@ -503,14 +776,15 @@ body {
 .product-thumb {
     width: 52px;
     height: 52px;
-    border-radius: 10px;
+    border-radius: var(--radius-sm);
     overflow: hidden;
-    background: rgba(255, 255, 255, 0.06);
+    background: var(--surface-alt);
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 1.4rem;
+    font-size: 1.2rem;
     border: 1px solid var(--border-color);
+    color: var(--text-secondary);
 }
 
 .product-thumb img {
@@ -526,7 +800,7 @@ body {
 }
 
 .image-card {
-    background: rgba(255, 255, 255, 0.03);
+    background: var(--bg-secondary);
     border: 1px solid var(--border-color);
     border-radius: var(--radius);
     padding: 1rem;
@@ -549,20 +823,16 @@ body {
     min-height: 240px;
     border-radius: var(--radius-sm);
     border: 1px dashed var(--border-hover);
-    background: rgba(15, 23, 42, 0.75);
+    background: var(--bg-card);
     display: flex;
     align-items: center;
     justify-content: center;
     overflow: hidden;
+    margin-bottom: 0.6rem;
 }
 
-.image-stage.small {
-    min-height: 160px;
-}
-
-.image-stage.final {
-    min-height: 320px;
-}
+.image-stage.small  { min-height: 160px; }
+.image-stage.final  { min-height: 320px; }
 
 .image-stage-preview {
     width: 100%;
@@ -583,42 +853,51 @@ body {
 }
 
 .toggle-card {
-    min-height: 42px;
+    min-height: 40px;
     display: flex;
     align-items: center;
     gap: 0.65rem;
-    padding: 0.65rem 0.85rem;
-    background: rgba(255, 255, 255, 0.03);
+    padding: 0.55rem 0.8rem;
+    background: var(--bg-card);
     border: 1px solid var(--border-color);
     border-radius: var(--radius-sm);
     color: var(--text-primary);
     cursor: pointer;
+    text-transform: none;
+    letter-spacing: 0;
+    font-size: 0.84rem;
+    font-weight: 400;
 }
 
 .toggle-card input {
     accent-color: var(--accent);
 }
 
+/* Image picker modal */
 .pick-modal {
     background: var(--bg-card);
     border: 1px solid var(--border-color);
     border-radius: var(--radius);
     box-shadow: var(--shadow-lg);
-    padding: 1rem 1.25rem;
+    padding: 1.25rem;
     width: min(640px, 92vw);
 }
+
 .pick-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 0.75rem;
-    font-weight: 700;
-    font-size: 0.95rem;
+    margin-bottom: 0.85rem;
+    font-family: var(--fd);
+    font-weight: 400;
+    font-size: 1.15rem;
 }
+
 .pick-row {
     display: flex;
     gap: 0.75rem;
 }
+
 .pick-thumb {
     flex: 1;
     position: relative;
@@ -627,17 +906,21 @@ body {
     cursor: pointer;
     border: 2px solid transparent;
     transition: border-color 0.15s, box-shadow 0.15s;
+    background: var(--surface-alt);
 }
+
 .pick-thumb.picked {
     border-color: var(--accent);
     box-shadow: 0 0 0 3px var(--accent-glow);
 }
+
 .pick-thumb img {
     width: 100%;
     aspect-ratio: 1;
     object-fit: cover;
     display: block;
 }
+
 .pick-check {
     position: absolute;
     top: 6px;
@@ -645,7 +928,7 @@ body {
     width: 26px;
     height: 26px;
     border-radius: 999px;
-    background: rgba(15, 23, 42, 0.7);
+    background: rgba(28, 21, 16, 0.7);
     color: #fff;
     display: flex;
     align-items: center;
@@ -653,9 +936,11 @@ body {
     font-size: 0.75rem;
     font-weight: 700;
 }
+
 .pick-thumb.picked .pick-check {
     background: var(--accent);
 }
+
 .pick-footer {
     display: flex;
     justify-content: flex-end;
@@ -663,33 +948,73 @@ body {
     margin-top: 0.85rem;
 }
 
-/* ===== Orders page extras ===== */
+/* ==========================================================================
+   Orders page expand/details row
+   ========================================================================== */
 .details-row td {
-    background: rgba(255, 255, 255, 0.02);
+    background: var(--bg-secondary);
 }
 
 .order-details-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
     gap: 1.25rem;
-    padding: 0.75rem 0;
-    font-size: 0.88rem;
+    padding: 0.85rem 0;
+    font-size: 0.84rem;
+    color: var(--text-secondary);
 }
 
 .order-details-grid strong {
     display: block;
     margin-bottom: 0.35rem;
     color: var(--text-primary);
+    font-weight: 600;
+    font-size: 0.72rem;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
 }
 
 .order-details-grid code {
-    background: rgba(255, 255, 255, 0.06);
+    background: var(--surface-alt);
     padding: 0.1rem 0.35rem;
-    border-radius: 4px;
+    border-radius: var(--radius-sm);
     font-size: 0.75rem;
     word-break: break-all;
+    color: var(--text-primary);
 }
 
-/* Payment / status badges */
-.badge-paid { background: rgba(34, 197, 94, 0.12); color: #22c55e; }
-.badge-secondary { background: rgba(148, 163, 184, 0.12); color: #94a3b8; }
+/* ==========================================================================
+   Responsive
+   ========================================================================== */
+@media (max-width: 900px) {
+    :root { --sb-w: 0px; }
+    .admin-shell { flex-direction: column; }
+    .admin-shell-nav {
+        width: 100%;
+        height: auto;
+        position: relative;
+        flex-direction: row;
+        flex-wrap: wrap;
+        align-items: center;
+        padding: 0.75rem 1rem;
+        gap: 0.5rem;
+    }
+    .admin-shell-nav::before,
+    .admin-shell-nav::after { display: none; }
+    .admin-shell-nav a {
+        padding: 0.4rem 0.75rem;
+        font-size: 0.78rem;
+        border-radius: var(--radius-sm);
+    }
+    .admin-shell-nav .nav-spacer { flex: 1 1 100%; min-height: 0; }
+    .admin-shell-nav > span { padding: 0 0.5rem !important; border: none; }
+    .admin-shell-nav .btn { margin: 0; }
+    .admin-page-section { padding: 1.25rem; }
+    .form-row { grid-template-columns: 1fr; }
+    .stats-grid { grid-template-columns: repeat(2, 1fr); }
+}
+
+@media (max-width: 480px) {
+    .stats-grid { grid-template-columns: 1fr; }
+    .section-header h2 { font-size: 1.5rem; }
+}

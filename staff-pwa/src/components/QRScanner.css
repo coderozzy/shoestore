@@ -1,45 +1,54 @@
+/* ==========================================================================
+   QR scanner — dark camera viewport with warm framing chrome
+   ========================================================================== */
+
 .qr-scanner-container {
     display: flex;
     flex-direction: column;
-    align-items: center;
-    padding: var(--spacing-lg);
-    max-width: 500px;
+    align-items: stretch;
+    padding: 0;
+    width: 100%;
+    max-width: 520px;
     margin: 0 auto;
+    flex: 1;
+    min-height: 0;
 }
 
 .scanner-header {
     text-align: center;
-    margin-bottom: var(--spacing-lg);
+    padding: 1rem 1.25rem 0.6rem;
 }
 
 .scanner-header h2 {
-    font-size: 1.5rem;
-    margin-bottom: var(--spacing-xs);
+    font-family: var(--fd);
+    font-size: 1.4rem;
+    font-weight: 400;
+    color: var(--text-primary);
+    margin-bottom: 0.2rem;
 }
 
 .scanner-header p {
     color: var(--text-secondary);
+    font-size: 0.85rem;
+    margin: 0;
 }
 
 .scanner-viewport {
     position: relative;
-    width: 100%;
-    max-width: 400px;
+    width: calc(100% - 1.7rem);
     aspect-ratio: 1;
-    background: var(--bg-secondary);
+    background: #0a0a0a;
     border-radius: var(--radius-lg);
     overflow: hidden;
-    border: 2px solid var(--border-color);
+    border: 1px solid var(--border-color);
+    margin: 0.6rem 0.85rem 0.85rem;
 }
 
-#qr-reader {
-    width: 100%;
-    height: 100%;
-}
+#qr-reader { width: 100%; height: 100%; }
 
 #qr-reader video {
-    width: 100%;
-    height: 100%;
+    width: 100% !important;
+    height: 100% !important;
     object-fit: cover;
 }
 
@@ -50,13 +59,9 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    background: rgba(26, 26, 46, 0.9);
-    gap: var(--spacing-md);
-}
-
-.btn-large {
-    padding: var(--spacing-md) var(--spacing-xl);
-    font-size: 1.1rem;
+    background: linear-gradient(145deg, #1a1510 0%, #0a0a0a 100%);
+    gap: 1rem;
+    color: rgba(244, 236, 226, 0.7);
 }
 
 .scanner-error {
@@ -66,66 +71,57 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    background: rgba(26, 26, 46, 0.95);
-    padding: var(--spacing-lg);
+    background: rgba(28, 21, 16, 0.92);
+    padding: 1.25rem;
     text-align: center;
+    color: rgba(244, 236, 226, 0.9);
+    gap: 0.5rem;
 }
 
 .error-icon {
-    font-size: 3rem;
-    margin-bottom: var(--spacing-md);
+    font-size: 2rem;
+    margin-bottom: 0.4rem;
 }
 
 .scanner-error p {
-    color: var(--accent-danger);
-    margin-bottom: var(--spacing-md);
+    color: #f8a8a8;
+    margin: 0;
+    font-size: 0.92rem;
 }
 
 .error-hint {
-    color: var(--text-muted) !important;
-    font-size: 0.875rem;
-    margin-top: var(--spacing-md) !important;
+    color: rgba(244, 236, 226, 0.55) !important;
+    font-size: 0.78rem;
+    margin-top: 0.5rem !important;
 }
 
-.scanner-controls {
-    margin-top: var(--spacing-md);
-}
+.scanner-controls { padding: 0 0.85rem 0.85rem; }
+
+.scanner-controls .btn { width: 100%; }
 
 .scanner-instructions {
-    margin-top: var(--spacing-xl);
+    width: calc(100% - 1.7rem);
+    margin: 0.4rem 0.85rem 1rem;
     display: flex;
     flex-direction: column;
-    gap: var(--spacing-md);
-    width: 100%;
+    gap: 0.45rem;
+    box-sizing: border-box;
 }
 
 .instruction {
     display: flex;
     align-items: center;
-    gap: var(--spacing-md);
-    padding: var(--spacing-sm) var(--spacing-md);
-    background: rgba(255, 255, 255, 0.05);
+    gap: 0.6rem;
+    padding: 0.55rem 0.85rem;
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
     border-radius: var(--radius-md);
-}
-
-.instruction-icon {
-    font-size: 1.25rem;
-}
-
-.instruction span:last-child {
     color: var(--text-secondary);
-    font-size: 0.875rem;
+    font-size: 0.82rem;
 }
 
-/* Fix html5-qrcode styles */
-#qr-reader__scan_region {
-    background: transparent !important;
-}
+.instruction-icon { font-size: 1rem; line-height: 1; }
 
-#qr-reader__dashboard {
-    display: none !important;
-}
-
-#qr-reader__dashboard_section_csr {
-    display: none !important;
-}
+#qr-reader__scan_region { background: transparent !important; }
+#qr-reader__dashboard,
+#qr-reader__dashboard_section_csr { display: none !important; }

@@ -13,8 +13,10 @@ RUN npm run build
 FROM nginx:alpine
 
 COPY --from=build /app/dist /usr/share/nginx/html
-COPY nginx.conf /etc/nginx/conf.d/default.conf
+COPY --chmod=0644 nginx.conf /etc/nginx/conf.d/default.conf
 
+# `--chmod=0644` ensures the unprivileged `nginx` user can read the config
+# even if the host file is mode 0600.
 RUN chown -R nginx:nginx /usr/share/nginx/html /var/cache/nginx /var/log/nginx \
     && touch /var/run/nginx.pid \
     && chown nginx:nginx /var/run/nginx.pid

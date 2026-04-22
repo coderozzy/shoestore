@@ -70,8 +70,13 @@ export default function OrderConfirmationPage() {
                 <span style={{ fontSize: '2.5rem', display: 'block', marginBottom: '0.5rem' }}>
                     {badge.tone === 'ok' ? '🎉' : badge.tone === 'warn' ? '⏳' : '⚠️'}
                 </span>
-                <h1>Order #{order.id}</h1>
+                <h1>{order.orderNumber || `Order #${order.id}`}</h1>
                 <p>{badge.label}</p>
+                {order.orderNumber && (
+                    <p className="muted" style={{ marginTop: '0.5rem', fontSize: '0.85rem' }}>
+                        Save this number — it's the only way to look up your order if you're not signed in.
+                    </p>
+                )}
             </div>
 
             <section className="confirmation-section">

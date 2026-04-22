@@ -47,6 +47,14 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-validation</artifactId>
         </dependency>
+        <!-- Used by OrderEmailService for the customer order-confirmation
+             email. The starter pulls in jakarta.mail; if no SMTP host is
+             configured at runtime the service detects the empty host and
+             no-ops (so dev environments without SMTP still boot cleanly). -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-mail</artifactId>
+        </dependency>
 
         <!-- Database -->
         <dependency>

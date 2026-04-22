@@ -48,6 +48,18 @@ services:
       AI_IMAGE_API_KEY: ${AI_IMAGE_API_KEY:-}
       AI_IMAGE_MODEL: ${AI_IMAGE_MODEL:-gemini-2.5-flash-image}
       AI_IMAGE_MAX_BYTES: ${AI_IMAGE_MAX_BYTES:-10000000}
+      # Order-confirmation email. Leave SPRING_MAIL_HOST blank in dev to
+      # disable mail entirely (OrderEmailService logs and no-ops).
+      SPRING_MAIL_HOST: ${SPRING_MAIL_HOST:-}
+      SPRING_MAIL_PORT: ${SPRING_MAIL_PORT:-587}
+      SPRING_MAIL_USERNAME: ${SPRING_MAIL_USERNAME:-}
+      SPRING_MAIL_PASSWORD: ${SPRING_MAIL_PASSWORD:-}
+      SPRING_MAIL_SMTP_AUTH: ${SPRING_MAIL_SMTP_AUTH:-true}
+      SPRING_MAIL_STARTTLS: ${SPRING_MAIL_STARTTLS:-true}
+      APP_MAIL_FROM: ${APP_MAIL_FROM:-Steps Store <noreply@example.com>}
+      # Used to build absolute "Track your order" links in the email.
+      # Must match whatever public origin the customer hits the gateway on.
+      APP_PUBLIC_BASE_URL: ${APP_PUBLIC_BASE_URL:-http://localhost:3000}
       APP_LOG_LEVEL: ${APP_LOG_LEVEL:-INFO}
       # AUTH_COOKIE_SECURE=false is appropriate for local HTTP dev only.
       # Flip to true in any environment that terminates TLS.

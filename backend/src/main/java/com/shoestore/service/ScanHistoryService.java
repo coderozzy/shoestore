@@ -1,11 +1,9 @@
 package com.shoestore.service;
 
-import com.shoestore.dto.ScanHistoryDTO;
 import com.shoestore.entity.Product;
 import com.shoestore.entity.ScanHistory;
 import com.shoestore.entity.User;
 import com.shoestore.exception.ResourceNotFoundException;
-import com.shoestore.mapper.ScanHistoryMapper;
 import com.shoestore.repository.ScanHistoryRepository;
 import com.shoestore.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -14,9 +12,13 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
-import java.util.List;
-
+/**
+ * Records that a staff user scanned a product. Today the only consumer is
+ * the staff QR-scan endpoint; the read-side endpoints (recent scans, scans
+ * by product/user, etc.) were never wired into any client and have been
+ * removed. The table itself is still useful for forensic/audit lookups via
+ * direct SQL even if it has no HTTP surface.
+ */
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -24,10 +26,9 @@ public class ScanHistoryService {
 
     private final ScanHistoryRepository scanHistoryRepository;
     private final UserRepository userRepository;
-    private final ScanHistoryMapper scanHistoryMapper;
 
     @Transactional
-    public ScanHistoryDTO recordScan(Product product, String action) {
+    public void recordScan(Product product, String action) {
         String username = SecurityContextHolder.getContext().getAuthentication().getName();
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new ResourceNotFoundException("User", "username", username));
@@ -38,27 +39,7 @@ public class ScanHistoryService {
                 .action(action)
                 .build();
 
-        ScanHistory saved = scanHistoryRepository.save(scanHistory);
+        scanHistoryRepository.save(scanHistory);
         log.info("Recorded scan: {} scanned {} (action: {})", username, product.getModelName(), action);
-        return scanHistoryMapper.toDTO(saved);
-    }
-
-    public List<ScanHistoryDTO> getRecentScans(int days) {
-        LocalDateTime startDate = LocalDateTime.now().minusDays(days);
-        return scanHistoryMapper.toDTOList(scanHistoryRepository.findRecentScans(startDate));
-    }
-
-    public List<ScanHistoryDTO> getScansByProduct(Long productId) {
-        return scanHistoryMapper.toDTOList(
-                scanHistoryRepository.findByProductIdOrderByScannedAtDesc(productId));
-    }
-
-    public List<ScanHistoryDTO> getScansByUser(Long userId) {
-        return scanHistoryMapper.toDTOList(
-                scanHistoryRepository.findByUserIdOrderByScannedAtDesc(userId));
-    }
-
-    public long getScanCountForProduct(Long productId) {
-        return scanHistoryRepository.countByProductId(productId);
     }
 }

@@ -52,6 +52,10 @@ class OrderServiceTest {
     private OrderLookupTokenService orderLookupTokenService;
     @Mock
     private AuditLogService auditLogService;
+    @Mock
+    private OrderNumberService orderNumberService;
+    @Mock
+    private OrderEmailService orderEmailService;
 
     private OrderService orderService;
     private TestStockMovementService stockMovementService;
@@ -68,7 +72,9 @@ class OrderServiceTest {
                 stockMovementService,
                 stripeService,
                 orderLookupTokenService,
-                auditLogService
+                auditLogService,
+                orderNumberService,
+                orderEmailService
         );
     }
 

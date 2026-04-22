@@ -3,7 +3,7 @@ import './ProductCard.css';
 const LOW_STOCK_THRESHOLD = 5;
 const LOW_STOCK_SIZE_THRESHOLD = 3;
 
-export default function ProductCard({ product, onSell, onShowQr, onDelete, showActions = false, showQrAction = false }) {
+export default function ProductCard({ product, onSell, onShowQr, showActions = false, showQrAction = false }) {
     const formatPrice = (price) => new Intl.NumberFormat('tr-TR', {
         style: 'currency',
         currency: 'TRY'
@@ -94,20 +94,6 @@ export default function ProductCard({ product, onSell, onShowQr, onDelete, showA
                 <span className="qr-label">QR Code</span>
                 <code className="qr-value">{product.qrCodeValue}</code>
             </div>
-
-            {onDelete && (
-                <div className="delete-action">
-                    <button
-                        className="btn btn-danger"
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            onDelete(product.id);
-                        }}
-                    >
-                        🗑️ Delete
-                    </button>
-                </div>
-            )}
         </div>
     );
 }

@@ -2,10 +2,22 @@
     min-height: 100vh;
     display: flex;
     flex-direction: column;
+    background: var(--bg-primary);
 }
 
 .main-content {
     flex: 1;
     display: flex;
     flex-direction: column;
+    /* Make room for the bottom tab bar so content never disappears under it.
+       The bar is fixed-height (--tab-bar-h) and lives below .main-content,
+       but the scroll container inside each page should still keep its last
+       row above the bar safe-area padding. */
+    padding-bottom: 0;
+    min-height: 0;
+}
+
+/* When the user is signed in (and the tab bar is rendered) reserve room. */
+.app.has-tabbar .main-content {
+    padding-bottom: var(--tab-bar-h);
 }

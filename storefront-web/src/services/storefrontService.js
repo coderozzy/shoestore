@@ -8,11 +8,17 @@ const api = axios.create({
     withCredentials: true
 });
 
-const tokenKey = (orderId) => `shoestore.orderToken.${orderId}`;
+// Tokens are stored under both the numeric id (used by the order-confirmation
+// page after the Stripe round-trip) and the public order number (used by the
+// Track Order page). Same value, two keys: cheaper than juggling a single
+// composite key.
+const idTokenKey = (orderId) => `shoestore.orderToken.${orderId}`;
+const numberTokenKey = (orderNumber) => `shoestore.orderTokenByNumber.${orderNumber}`;
 
-function rememberOrderToken(orderId, token) {
+function rememberOrderToken(orderId, token, orderNumber) {
     try {
-        sessionStorage.setItem(tokenKey(orderId), token);
+        if (orderId != null) sessionStorage.setItem(idTokenKey(orderId), token);
+        if (orderNumber) sessionStorage.setItem(numberTokenKey(orderNumber), token);
     } catch {
         // Safari private mode etc. — let the browser tab keep the token only
         // in memory via the caller's state.
@@ -21,13 +27,21 @@ function rememberOrderToken(orderId, token) {
 
 export function getStoredOrderToken(orderId) {
     try {
-        return sessionStorage.getItem(tokenKey(orderId)) || '';
+        return sessionStorage.getItem(idTokenKey(orderId)) || '';
     } catch {
         return '';
     }
 }
 
-export const storefrontService = {
+export function getStoredOrderTokenByNumber(orderNumber) {
+    try {
+        return sessionStorage.getItem(numberTokenKey(orderNumber)) || '';
+    } catch {
+        return '';
+    }
+}
+
+const storefrontService = {
     async getProducts() {
         const response = await api.get('/products');
         return response.data;
@@ -46,6 +60,33 @@ export const storefrontService = {
         const response = await api.get(`/orders/${orderId}`, {
             params: { token: lookupToken }
         });
+        // The response carries orderNumber too — opportunistically remember
+        // the token under that key so a later Track Order lookup hits cache
+        // without round-tripping back to the email.
+        if (response.data?.orderNumber) {
+            rememberOrderToken(orderId, lookupToken, response.data.orderNumber);
+        }
+        return response.data;
+    },
+
+    /**
+     * Looks up an order by its public STP-XXXXXXXX number. The token must
+     * still match (signed against the underlying numeric id), so a guessed
+     * order number alone never grants access.
+     */
+    async getOrderByNumber(orderNumber, token) {
+        const lookupToken = token || getStoredOrderTokenByNumber(orderNumber);
+        if (!lookupToken) {
+            throw new Error('Missing order lookup token');
+        }
+        const response = await api.get(`/orders/by-number/${encodeURIComponent(orderNumber)}`, {
+            params: { token: lookupToken }
+        });
+        // Mirror the same opportunistic caching back the other way: now we
+        // know the numeric id, so a later by-id lookup also hits cache.
+        if (response.data?.id) {
+            rememberOrderToken(response.data.id, lookupToken, orderNumber);
+        }
         return response.data;
     },
 
@@ -55,7 +96,11 @@ export const storefrontService = {
         // back on the return-from-Stripe round-trip without having to pass it
         // through the URL (H-1-style leak).
         if (response.data?.orderId && response.data?.lookupToken) {
-            rememberOrderToken(response.data.orderId, response.data.lookupToken);
+            rememberOrderToken(
+                response.data.orderId,
+                response.data.lookupToken,
+                response.data.orderNumber
+            );
         }
         return response.data;
     },

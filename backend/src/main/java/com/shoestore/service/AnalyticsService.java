@@ -1,13 +1,10 @@
 package com.shoestore.service;
 
 import com.shoestore.dto.DailyRevenueDTO;
-import com.shoestore.dto.SalesRecordDTO;
 import com.shoestore.dto.SalesStatsDTO;
-import com.shoestore.entity.StockMovement;
 import com.shoestore.repository.StockMovementRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -33,7 +30,7 @@ public class AnalyticsService {
                         unitPrice = BigDecimal.ZERO;
                     }
                     BigDecimal totalRevenue = unitPrice.multiply(BigDecimal.valueOf(salesCount));
-                    
+
                     return SalesStatsDTO.builder()
                             .productId((Long) result[0])
                             .modelName((String) result[1])
@@ -67,29 +64,6 @@ public class AnalyticsService {
                         .totalSales(result[1] == null ? 0L : ((Number) result[1]).longValue())
                         .totalRevenue((BigDecimal) result[2])
                         .build())
-                .collect(Collectors.toList());
-    }
-
-    @Transactional(readOnly = true)
-    public List<SalesRecordDTO> getSalesRecords(LocalDateTime startDate, LocalDateTime endDate) {
-        List<StockMovement> movements = stockMovementRepository.findSalesRecords(startDate, endDate);
-        return movements.stream()
-                .map(movement -> {
-                    BigDecimal unitPrice = movement.getProduct().getPrice();
-                    BigDecimal totalPrice = unitPrice.multiply(BigDecimal.valueOf(movement.getQuantity()));
-                    return SalesRecordDTO.builder()
-                            .id(movement.getId())
-                            .occurredAt(movement.getOccurredAt())
-                            .productId(movement.getProduct().getId())
-                            .modelName(movement.getProduct().getModelName())
-                            .color(movement.getProduct().getColor())
-                            .size(movement.getSize())
-                            .quantity(movement.getQuantity())
-                            .unitPrice(unitPrice)
-                            .totalPrice(totalPrice)
-                            .username(movement.getUser().getUsername())
-                            .build();
-                })
                 .collect(Collectors.toList());
     }
 }

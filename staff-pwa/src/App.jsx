@@ -12,8 +12,7 @@ function App() {
     const { isAuthenticated } = useAuth();
 
     return (
-        <div className="app">
-            {isAuthenticated && <Navbar />}
+        <div className={`app${isAuthenticated ? ' has-tabbar' : ''}`}>
             <main className="main-content">
                 <Routes>
                     <Route
@@ -47,6 +46,7 @@ function App() {
                     <Route path="*" element={<Navigate to="/" />} />
                 </Routes>
             </main>
+            {isAuthenticated && <Navbar />}
         </div>
     );
 }

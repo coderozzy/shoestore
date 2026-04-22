@@ -1,7 +1,6 @@
 package com.shoestore.repository;
 
 import com.shoestore.entity.Product;
-import com.shoestore.enums.Gender;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -15,8 +14,6 @@ import java.util.UUID;
 public interface ProductRepository extends JpaRepository<Product, Long> {
 
     Optional<Product> findByQrCodeValue(UUID qrCodeValue);
-
-    List<Product> findByGender(Gender gender);
 
     @Query("SELECT p FROM Product p JOIN p.sizes s GROUP BY p HAVING SUM(s.stockQuantity) <= :threshold")
     List<Product> findLowStockProducts(@Param("threshold") int threshold);
