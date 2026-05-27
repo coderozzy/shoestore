@@ -36,7 +36,7 @@ function shrinkImage(dataUrl, maxDim = 1000, quality = 0.78) {
 function readFile(file) {
     return new Promise((resolve, reject) => {
         const r = new FileReader();
-        r.onload = () => shrinkImage(r.result, 1100, 0.82).then((b) => resolve({ base64: b }));
+        r.onload = () => shrinkImage(r.result, 1100, 0.82).then((b) => resolve({ base64: b, mimeType: 'image/jpeg' }));
         r.onerror = () => reject(new Error('Could not read file'));
         r.readAsDataURL(file);
     });
