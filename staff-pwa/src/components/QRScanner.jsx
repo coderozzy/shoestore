@@ -4,7 +4,6 @@ import './QRScanner.css';
 
 export default function QRScanner({ onScan, onError }) {
     const [isScanning, setIsScanning] = useState(false);
-    const [hasPermission, setHasPermission] = useState(null);
     const [error, setError] = useState(null);
     const scannerRef = useRef(null);
     const html5QrCodeRef = useRef(null);
@@ -43,11 +42,9 @@ export default function QRScanner({ onScan, onError }) {
             );
 
             setIsScanning(true);
-            setHasPermission(true);
         } catch (err) {
             console.error('Failed to start scanner:', err);
             setError(err.message || 'Failed to access camera');
-            setHasPermission(false);
             onError?.(err);
         }
     };

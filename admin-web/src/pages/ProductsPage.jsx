@@ -13,7 +13,7 @@ const EMPTY_FORM = {
 };
 const DEFAULT_SIZES = [35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45];
 const CITY_OPTIONS = ['Istanbul', 'Paris', 'Tokyo', 'Berlin', 'New York'];
-const EMPTY_GEN = { mode: 'studio', city: 'Istanbul', timeOfDay: 'day', focusArea: 'waist-down' };
+const EMPTY_GEN = { mode: 'studio', city: 'Istanbul', timeOfDay: 'day' };
 
 function shrinkImage(dataUrl, maxDim = 1000, quality = 0.78) {
     return new Promise((resolve) => {
@@ -36,7 +36,7 @@ function shrinkImage(dataUrl, maxDim = 1000, quality = 0.78) {
 function readFile(file) {
     return new Promise((resolve, reject) => {
         const r = new FileReader();
-        r.onload = () => shrinkImage(r.result, 1100, 0.82).then((b) => resolve({ base64: b, mimeType: 'image/jpeg' }));
+        r.onload = () => shrinkImage(r.result, 1100, 0.82).then((b) => resolve({ base64: b }));
         r.onerror = () => reject(new Error('Could not read file'));
         r.readAsDataURL(file);
     });
@@ -47,7 +47,6 @@ export default function ProductsPage() {
     const [categories, setCategories] = useState([]);
     const [search, setSearch] = useState('');
     const [loading, setLoading] = useState(true);
-    const [error, setError] = useState('');
 
     const [modalOpen, setModalOpen] = useState(false);
     const [editing, setEditing] = useState(null);
@@ -247,7 +246,6 @@ export default function ProductsPage() {
                     <button className="btn btn-primary" onClick={openCreate}>+ New product</button>
                 </div>
             </div>
-            {error && <div className="alert alert-error">{error}</div>}
             {loading ? <p style={{ color: 'var(--text-secondary)' }}>Loading…</p> : (
                 <div className="admin-table-wrapper">
                     <table className="admin-table">
