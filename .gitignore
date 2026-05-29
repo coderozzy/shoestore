@@ -22,3 +22,7 @@ target/
 # OS
 .DS_Store
 Thumbs.db
+
+# Vite dev-server timestamp scratch files
+*.vite.config.js.timestamp-*
+vite.config.js.timestamp-*
